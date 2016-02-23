@@ -1,0 +1,54 @@
+{
+  "name": "prex",
+  "version": "0.0.1",
+  "description": "Async coordination primitives and extensions on top of ES6 Promises",
+  "license": "Apache-2.0",
+  "keywords": [
+    "async",
+    "promise",
+    "promises",
+    "future",
+    "deferred",
+    "promise-a",
+    "promise-a-plus",
+    "then",
+    "await",
+    "coordination",
+    "semaphore",
+    "cancellation",
+    "cancellationtoken"
+  ],
+  "main": "out/lib/index.js",
+  "typings": "out/lib/index.d.ts",
+  "scripts": {
+    "build": "gulp build",
+    "test": "gulp test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "del": "^1.2.0",
+    "gulp": "^3.8.11",
+    "gulp-mocha": "^2.1.0",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-typescript": "^2.10.0",
+    "gulp-util": "^3.0.4",
+    "merge2": "^0.3.6",
+    "mocha": "^2.2.5",
+    "source-map-support": "^0.2.10",
+    "typescript": "^1.9.0-dev.20160205"
+  },
+  "author": {
+    "name": "Ron Buckton",
+    "email": "rbuckton@chronicles.org",
+    "url": "http://github.com/rbuckton"
+  },
+  "bugs": {
+    "email": "rbuckton@chronicles.org",
+    "url": "http://github.com/rbuckton/prex/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rbuckton/prex.git"
+  }
+}
