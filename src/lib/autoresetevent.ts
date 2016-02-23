@@ -75,10 +75,8 @@ export class AutoResetEvent {
             });
 
             const registration = token.register(() => {
-                if (node.list) {
-                    node.list.deleteNode(node);
-                    reject(new CancelError());
-                }
+                node.list.deleteNode(node);
+                reject(new CancelError());
             });
         });
     }

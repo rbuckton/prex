@@ -6,10 +6,16 @@ See LICENSE file in the project root for details.
 ***************************************************************************** */
 
 import { assert } from "chai";
-import { Barrier, AsyncQueue, CancellationToken, CancelError } from "../lib";
+import { Barrier, AsyncQueue, CancellationTokenSource, CancellationToken, CancelError } from "../lib";
 
 describe("barrier", () => {
     describe("ctor", () => {
+        it("correct", () => {
+            const barrier = new Barrier(1);
+            assert.strictEqual(barrier.currentPhaseNumber, 0);
+            assert.strictEqual(barrier.participantCount, 1);
+            assert.strictEqual(barrier.remainingParticipants, 1);
+        });
         it("throws if participantCount not number", () => {
             assert.throws(() => new Barrier(<any>{}), TypeError);
         });
@@ -21,6 +27,18 @@ describe("barrier", () => {
         });
     });
     describe("add", () => {
+        it("one", () => {
+            const barrier = new Barrier(1);
+            barrier.add();
+            assert.strictEqual(barrier.participantCount, 2);
+            assert.strictEqual(barrier.remainingParticipants, 2);
+        });
+        it("multiple", () => {
+            const barrier = new Barrier(1);
+            barrier.add(3);
+            assert.strictEqual(barrier.participantCount, 4);
+            assert.strictEqual(barrier.remainingParticipants, 4);
+        });
         it("throws if participantCount not number", () => {
             assert.throws(() => new Barrier(1).add(<any>{}), TypeError);
         });
@@ -37,6 +55,18 @@ describe("barrier", () => {
         });
     });
     describe("remove", () => {
+        it("one", () => {
+            const barrier = new Barrier(1);
+            barrier.remove();
+            assert.strictEqual(barrier.participantCount, 0);
+            assert.strictEqual(barrier.remainingParticipants, 0);
+        });
+        it("multiple", () => {
+            const barrier = new Barrier(4);
+            barrier.remove(3);
+            assert.strictEqual(barrier.participantCount, 1);
+            assert.strictEqual(barrier.remainingParticipants, 1);
+        });
         it("throws if participantCount not number", () => {
             assert.throws(() => new Barrier(1).remove(<any>{}), TypeError);
         });
@@ -61,6 +91,14 @@ describe("barrier", () => {
         });
         it("throws if token is canceled", async () => {
             await assert.throwsAsync(() => new Barrier(1).signalAndWait(CancellationToken.canceled), CancelError);
+        });
+        it("throws if token is later", async () => {
+            const barrier = new Barrier(2);
+            const source = new CancellationTokenSource();
+            const waitPromise = barrier.signalAndWait(source.token);
+            source.cancel();
+            await barrier.signalAndWait();
+            await assert.throwsAsync(() => waitPromise, CancelError);
         });
         it("throws if executing post phase action", async () => {
             const queue = new AsyncQueue<void>();
@@ -102,6 +140,10 @@ describe("barrier", () => {
 
             await Promise.all([operation1(), operation2(), operation3()]);
             assert.deepEqual(["begin1", "begin2", "begin3", "end1", "end2", "end3"], steps);
+        });
+        it("error in postPhaseAction raised to participant", async () => {
+            const barrier = new Barrier(1, () => { throw new Error(); });
+            await assert.throwsAsync(() => barrier.signalAndWait());
         });
     });
 

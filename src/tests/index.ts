@@ -11,6 +11,7 @@ import { install } from "source-map-support";
 install();
 
 import "./async-chai";
+import "./list";
 import "./cancellation";
 import "./queue";
 import "./stack";
@@ -20,3 +21,4 @@ import "./barrier";
 import "./countdown";
 import "./semaphore";
 import "./readerwriterlock";
+import "./deferred";

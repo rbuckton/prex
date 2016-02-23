@@ -1,21 +1,23 @@
 /*! *****************************************************************************
-Copyright (c) Microsoft Corporation. 
-Licensed under the Apache License, Version 2.0. 
+Copyright (c) Microsoft Corporation.
+Licensed under the Apache License, Version 2.0.
 
 See LICENSE file in the project root for details.
 ***************************************************************************** */
 
+import { isMissing, isIterable, isInstance, isFunction } from "./utils";
+
 export class LinkedListNode<T> {
-    /*@internal*/ _list: LinkedList<T>;
-    /*@internal*/ _previous: LinkedListNode<T>;
-    /*@internal*/ _next: LinkedListNode<T>;
+    /*@internal*/ _list: LinkedList<T> = undefined;
+    /*@internal*/ _previous: LinkedListNode<T> = undefined;
+    /*@internal*/ _next: LinkedListNode<T> = undefined;
 
     public value: T;
-    
+
     constructor (value?: T) {
         this.value = value;
     }
-    
+
     public get list(): LinkedList<T> {
         return this._list;
     }
@@ -43,12 +45,13 @@ const enum Position {
 }
 
 export class LinkedList<T> {
-    private _head: LinkedListNode<T>;
+    private _head: LinkedListNode<T> = undefined;
     private _size: number = 0;
-    
-    public constructor(values?: T[]) {
-        if (values !== undefined) {
-            for (let value of values) {
+
+    public constructor(iterable?: Iterable<T>) {
+        if (!isIterable(iterable, /*optional*/ true)) throw new TypeError("Object not iterable: iterable.");
+        if (!isMissing(iterable)) {
+            for (const value of iterable) {
                 this.push(value);
             }
         }
@@ -75,7 +78,7 @@ export class LinkedList<T> {
             yield node.value;
         }
     }
-    
+
     public * nodes() {
         let node: LinkedListNode<T>;
         let next = this.first;
@@ -99,58 +102,62 @@ export class LinkedList<T> {
                 return node;
             }
         }
-        
+
         return undefined;
     }
-    
+
     public findLast(value: T): LinkedListNode<T> {
         for (let node = this.last; node; node = node.previous) {
             if (sameValue(node.value, value)) {
                 return node;
             }
         }
-        
+
         return undefined;
     }
-    
+
     public has(value: T): boolean {
         return this.find(value) !== undefined;
     }
-    
+
     public insertBefore(node: LinkedListNode<T>, value: T): LinkedListNode<T> {
-        if (node && node.list !== this) throw new Error("Wrong list.");
+        if (!isInstance(node, LinkedListNode, /*optional*/ true)) throw new TypeError("LinkedListNode expected: node");
+        if (!isMissing(node) && node.list !== this) throw new Error("Wrong list.");
         return this._insertNode(node, new LinkedListNode(value), Position.before);
     }
-    
-    public insertBeforeNode(node: LinkedListNode<T>, newNode: LinkedListNode<T>): void {
-        if (newNode == undefined) throw new TypeError();
-        if (node && node.list !== this) throw new Error("Wrong list.");
-        if (newNode.list) throw new Error("Node is already attached to a list.");
+
+    public insertNodeBefore(node: LinkedListNode<T>, newNode: LinkedListNode<T>): void {
+        if (!isInstance(node, LinkedListNode, /*optional*/ true)) throw new TypeError("LinkedListNode expected: node");
+        if (!isInstance(newNode, LinkedListNode)) throw new TypeError("LinkedListNode expected: newNode");
+        if (!isMissing(node) && node.list !== this) throw new Error("Wrong list.");
+        if (!isMissing(newNode.list)) throw new Error("Node is already attached to a list.");
         this._insertNode(node, newNode, Position.before);
     }
 
     public insertAfter(node: LinkedListNode<T>, value: T): LinkedListNode<T> {
-        if (node && node.list !== this) throw new Error("Wrong list.");
+        if (!isInstance(node, LinkedListNode, /*optional*/ true)) throw new TypeError("LinkedListNode expected: node");
+        if (!isMissing(node) && node.list !== this) throw new Error("Wrong list.");
         return this._insertNode(node, new LinkedListNode(value), Position.after);
     }
-    
-    public insertAfterNode(node: LinkedListNode<T>, newNode: LinkedListNode<T>): void {
-        if (newNode == undefined) throw new TypeError();
-        if (node && node.list !== this) throw new Error("Wrong list.");
-        if (newNode.list) throw new Error("Node is already attached to a list.");
+
+    public insertNodeAfter(node: LinkedListNode<T>, newNode: LinkedListNode<T>): void {
+        if (!isInstance(node, LinkedListNode, /*optional*/ true)) throw new TypeError("LinkedListNode expected: node");
+        if (!isInstance(newNode, LinkedListNode)) throw new TypeError("LinkedListNode expected: newNode");
+        if (!isMissing(node) && node.list !== this) throw new Error("Wrong list.");
+        if (!isMissing(newNode.list)) throw new Error("Node is already attached to a list.");
         this._insertNode(node, newNode, Position.after);
     }
-    
+
     public push(value?: T): LinkedListNode<T> {
         return this._insertNode(undefined, new LinkedListNode(value), Position.after);
     }
-    
+
     public pushNode(newNode: LinkedListNode<T>): void {
-        if (newNode == undefined) throw new TypeError();
-        if (newNode.list) throw new Error("Node is already attached to a list.");
+        if (!isInstance(newNode, LinkedListNode)) throw new TypeError("LinkedListNode expected: newNode");
+        if (!isMissing(newNode.list)) throw new Error("Node is already attached to a list.");
         this._insertNode(undefined, newNode, Position.after);
     }
-    
+
     public pop(): T {
         let node = this.popNode();
         return node ? node.value : undefined;
@@ -162,7 +169,7 @@ export class LinkedList<T> {
             return node;
         }
     }
-    
+
     public shift(): T {
         let node = this.shiftNode();
         return node ? node.value : undefined;
@@ -174,30 +181,31 @@ export class LinkedList<T> {
             return node;
         }
     }
-    
+
     public unshift(value?: T): LinkedListNode<T> {
         return this._insertNode(undefined, new LinkedListNode(value), Position.before);
     }
 
     public unshiftNode(newNode: LinkedListNode<T>): void {
-        if (newNode == undefined) throw new TypeError();
-        if (newNode.list) throw new Error("Node is already attached to a list.");
+        if (!isInstance(newNode, LinkedListNode)) throw new TypeError("LinkedListNode expected: newNode");
+        if (!isMissing(newNode.list)) throw new Error("Node is already attached to a list.");
         this._insertNode(undefined, newNode, Position.before);
     }
-    
+
     public delete(value: T): boolean {
         return this.deleteNode(this.find(value));
     }
-    
+
     public deleteNode(node: LinkedListNode<T>): boolean {
-        if (node === undefined || node.list !== this) {
+        if (isMissing(node) || node.list !== this) {
             return false;
         }
-        
+
         return this._deleteNode(node);
     }
-    
+
     public deleteAll(predicate: (value: T, node: LinkedListNode<T>, list: LinkedList<T>) => boolean, thisArg?: any) {
+        if (!isFunction(predicate)) throw new TypeError("Function expected: predicate");
         let count = 0;
         let node = this.first;
         while (node) {
@@ -206,10 +214,10 @@ export class LinkedList<T> {
                 this._deleteNode(node);
                 ++count;
             }
-            
+
             node = next;
         }
-        
+
         return count;
     }
 
@@ -218,13 +226,14 @@ export class LinkedList<T> {
             this.deleteNode(this.last);
         }
     }
-    
-    public forEach(callbackfn: (value: T, node: LinkedListNode<T>, list: LinkedList<T>) => void, thisArg?: any) {
+
+    public forEach(callback: (value: T, node: LinkedListNode<T>, list: LinkedList<T>) => void, thisArg?: any) {
+        if (!isFunction(callback)) throw new TypeError("Function expected: predicate");
         for (const node of this.nodes()) {
-            callbackfn.call(thisArg, node.value, node, this);
+            callback.call(thisArg, node.value, node, this);
         }
     }
-    
+
     private _deleteNode(node: LinkedListNode<T>): boolean {
         if (node._next === node) {
             this._head = undefined;
@@ -267,12 +276,12 @@ export class LinkedList<T> {
                     adjacentNode._previous._next = newNode;
                     adjacentNode._previous = newNode;
                     break;
-                    
+
                 case Position.after:
                     if (adjacentNode === undefined) {
                         adjacentNode = this._head._previous;
                     }
-    
+
                     newNode._previous = adjacentNode;
                     newNode._next = adjacentNode._next;
                     adjacentNode._next._previous = newNode;
