@@ -59,7 +59,7 @@ export class AutoResetEvent {
      */
     public wait(token?: CancellationToken): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (token === undefined) token = CancellationToken.none;
+            if (isMissing(token)) token = CancellationToken.none;
             if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
             token.throwIfCancellationRequested();
 
