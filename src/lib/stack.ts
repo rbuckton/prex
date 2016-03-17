@@ -14,6 +14,11 @@ export class AsyncStack<T> {
     private _available: Array<Promise<T>> = undefined;
     private _pending: Array<(value: T | PromiseLike<T>) => void> = undefined;
 
+    /**
+     * Initializes a new instance of the AsyncStack class.
+     *
+     * @param iterable An optional iterable of values or promises.
+     */
     constructor(iterable?: Iterable<T | PromiseLike<T>>) {
         if (!isIterable(iterable, /*optional*/ true)) throw new TypeError("Object not iterable: iterable.");
         if (!isMissing(iterable)) {
@@ -25,9 +30,11 @@ export class AsyncStack<T> {
     }
 
     /**
-      * Adds a value to the top of the stack. If the stack is empty but has a pending
-      * pop request, the value will be popped and the request fulfilled.
-      */
+     * Adds a value to the top of the stack. If the stack is empty but has a pending
+     * pop request, the value will be popped and the request fulfilled.
+     *
+     * @param value A value or promise to add to the stack.
+     */
     public push(value: T | PromiseLike<T>): void {
         if (this._pending !== undefined) {
             const resolve = this._pending.shift();
@@ -45,9 +52,9 @@ export class AsyncStack<T> {
     }
 
     /**
-      * Removes and returns a Promise for the top value of the stack. If the stack is empty,
-      * returns a Promise for the next value to be pushed on to the stack.
-      */
+     * Removes and returns a Promise for the top value of the stack. If the stack is empty,
+     * returns a Promise for the next value to be pushed on to the stack.
+     */
     public pop(): Promise<T> {
         if (this._available !== undefined) {
             const promise = this._available.pop();

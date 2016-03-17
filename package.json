@@ -1,6 +1,6 @@
 {
   "name": "prex",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Async coordination primitives and extensions on top of ES6 Promises",
   "license": "Apache-2.0",
   "keywords": [
@@ -41,11 +41,10 @@
   },
   "author": {
     "name": "Ron Buckton",
-    "email": "rbuckton@chronicles.org",
+    "email": "ron.buckton@microsoft.com",
     "url": "http://github.com/rbuckton"
   },
   "bugs": {
-    "email": "rbuckton@chronicles.org",
     "url": "http://github.com/rbuckton/prex/issues"
   },
   "repository": {

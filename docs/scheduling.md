@@ -1,0 +1,88 @@
+<!--
+Copyright (c) Microsoft Corporation.  
+Licensed under the Apache License, Version 2.0.
+
+See LICENSE file in the project root for details.
+-->
+
+# Scheduling
+[Back to Index](index.md)
+
+### Table of Contents
+* [Class: AsyncQueue](#class-asyncqueue)
+  * [new AsyncQueue(iterable?)](#new-asyncqueueiterable)
+  * [queue.put(value)](#queueputvalue)
+  * [queue.get()](#queueget)
+* [Class: AsyncStack](#class-asyncstack)
+  * [new AsyncStack(iterable?)](#new-asyncstackiterable)
+  * [stack.push(value)](#stackpushvalue)
+  * [stack.pop()](#stackpop)
+* [Function: delay(msec, value?)](#function-delaymsec-value)
+
+# Class: AsyncQueue
+An asynchronous queue.
+
+### Syntax
+```ts
+export declare class AsyncQueue<T> {
+    constructor(iterable?: Iterable<T | PromiseLike<T>>);
+    put(value: T | PromiseLike<T>): void;
+    get(): Promise<T>;
+}
+```
+
+## new AsyncQueue(iterable?)
+Initializes a new instance of the AsyncQueue class.
+* `iterable` [&lt;Iterable&gt;][Iterable] An optional iterable of values or promises.
+
+## queue.put(value)
+Adds a value to the end of the queue. If the queue is empty but has a pending
+dequeue request, the value will be dequeued and the request fulfilled.
+* `value` &lt;`any`&gt; A value or promise to add to the queue.
+
+## queue.get()
+Removes and returns a Promise for the first value in the queue. If the queue is empty,
+returns a Promise for the next value to be added to the queue.
+* Returns: [&lt;Promise&gt;][Promise]
+
+# Class: AsyncStack
+An asynchronous stack.
+
+### Syntax
+```ts
+export declare class AsyncStack<T> {
+    constructor(iterable?: Iterable<T | PromiseLike<T>>);
+    push(value: T | PromiseLike<T>): void;
+    pop(): Promise<T>;
+}
+```
+
+## new AsyncStack(iterable?)
+Initializes a new instance of the AsyncStack class.
+* `iterable` [&lt;Iterable&gt;][Iterable] An optional iterable of values or promises.
+
+## stack.push(value)
+Adds a value to the top of the stack. If the stack is empty but has a pending
+pop request, the value will be popped and the request fulfilled.
+* `value` &lt;`any`&gt; A value or promise to add to the stack.
+
+## stack.pop()
+Removes and returns a Promise for the top value of the stack. If the stack is empty,
+returns a Promise for the next value to be pushed on to the stack.
+* Returns: [&lt;Promise&gt;][Promise]
+
+# Function: delay(msec, value?)
+Waits the specified number of milliseconds and resolves with the provided value.
+* `msec` [&lt;Number&gt;][Number] The number of milliseconds to delay.
+* `value` &lt;`any`&gt; The resolution value for the promise.
+* Returns: [&lt;Promise&gt;][Promise]
+
+### Syntax
+```ts
+export declare function delay(msec: number): Promise<void>;
+export declare function delay<T>(msec: number, value?: T | PromiseLike<T>): Promise<T>;
+```
+
+[Number]: http://ecma-international.org/ecma-262/6.0/index.html#sec-number-constructor
+[Promise]: http://ecma-international.org/ecma-262/6.0/index.html#sec-promise-constructor
+[Iterable]: http://ecma-international.org/ecma-262/6.0/index.html#sec-symbol.iterator

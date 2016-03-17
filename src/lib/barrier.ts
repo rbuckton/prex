@@ -15,7 +15,7 @@ import { isMissing, isFunction, isNumber, isObject, isInstance } from "./utils";
  */
 export class Barrier {
     private _isExecutingPostPhaseAction = false;
-    private _postPhaseAction: (barrier: Barrier) => void | Promise<void>;
+    private _postPhaseAction: (barrier: Barrier) => void | PromiseLike<void>;
     private _phaseNumber: number = 0;
     private _participantCount: number;
     private _remainingParticipants: number;
@@ -27,7 +27,7 @@ export class Barrier {
      * @param participantCount The initial number of participants for the barrier.
      * @param postPhaseAction An action to execute between each phase.
      */
-    constructor(participantCount: number, postPhaseAction?: (barrier: Barrier) => void | Promise<void>) {
+    constructor(participantCount: number, postPhaseAction?: (barrier: Barrier) => void | PromiseLike<void>) {
         if (!isNumber(participantCount)) throw new TypeError("Number expected: participantCount.");
         if ((participantCount |= 0) < 0) throw new RangeError("Argument out of range: participantCount.");
         if (!isFunction(postPhaseAction, /*optional*/ true)) throw new TypeError("Function expected: postPhaseAction.");

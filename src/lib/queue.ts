@@ -32,6 +32,8 @@ export class AsyncQueue<T> {
     /**
      * Adds a value to the end of the queue. If the queue is empty but has a pending
      * dequeue request, the value will be dequeued and the request fulfilled.
+     *
+     * @param value A value or promise to add to the queue.
      */
     public put(value: T | PromiseLike<T>): void {
         if (this._pending !== undefined) {

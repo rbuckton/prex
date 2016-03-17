@@ -9,11 +9,19 @@ import { CancellationToken, CancelError } from "./cancellation";
 import { ManualResetEvent } from "./manualresetevent";
 import { isMissing, isNumber, isInstance } from "./utils";
 
+/**
+ * An event that is set when all participants have signaled.
+ */
 export class CountdownEvent {
     private _initialCount: number;
     private _remainingCount: number;
     private _event: ManualResetEvent;
 
+    /**
+     * Initializes a new instance of the CountdownEvent class.
+     *
+     * @param initialCount The initial participant count.
+     */
     constructor(initialCount: number) {
         if (!isNumber(initialCount)) throw new TypeError("Number expected: initialCount.");
         if ((initialCount |= 0) < 0) throw new RangeError("Argument out of range: initialCount.");
@@ -40,7 +48,7 @@ export class CountdownEvent {
     /**
      * Increments the event's current count by one or more.
      *
-     * @param count An optional count specifying the additional number of signals to wait for.
+     * @param count An optional count specifying the additional number of signals for which the event will wait.
      */
     public add(count?: number): void {
         if (isMissing(count)) count = 1;

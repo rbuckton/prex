@@ -208,7 +208,14 @@ canceledSource.cancel();
  * Propagates notifications that operations should be canceled.
  */
 export class CancellationToken {
+    /**
+     * A token which will never be canceled.
+     */
     public static readonly none = new CancellationToken(/*canceled*/ false);
+
+    /**
+     * A token that is already canceled.
+     */
     public static readonly canceled = new CancellationToken(/*canceled*/ true);
 
     private _source: CancellationTokenSource;
@@ -216,9 +223,10 @@ export class CancellationToken {
     /**
      * Creates a new instance of a CancellationToken.
      *
-     * @param source The optional source for the token.
+     * @param canceled An optional value indicating whether the token is canceled.
      */
     constructor(canceled?: boolean);
+
     /*@internal*/
     constructor(source: CancellationTokenSource);
     constructor(source?: CancellationTokenSource | boolean) {

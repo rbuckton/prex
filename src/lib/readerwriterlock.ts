@@ -9,33 +9,25 @@ import { LinkedListNode, LinkedList } from "./list";
 import { CancellationToken, CancelError } from "./cancellation";
 import { isMissing, isInstance } from "./utils";
 
-export interface ReadLock {
-    release(): void;
-}
-
-export interface WriteLock {
-    release(): void;
-}
-
-export interface UpgradeLock {
-    release(): void;
-}
-
-export interface UpgradeableReadLock extends ReadLock {
-    upgrade(token?: CancellationToken): Promise<UpgradeLock>;
-}
-
+/**
+ * Coordinates readers and writers for a resource.
+ */
 export class ReaderWriterLock {
     private _readers = new LinkedList<() => void>();
     private _upgradeables = new LinkedList<() => void>();
     private _upgrades = new LinkedList<() => void>();
     private _writers = new LinkedList<() => void>();
-    private _upgradeable: UpgradeableReadLock;
-    private _upgraded: UpgradeLock;
+    private _upgradeable: UpgradeableLockHandle;
+    private _upgraded: LockHandle;
     private _count = 0;
 
-    public read(token?: CancellationToken): Promise<ReadLock> {
-        return new Promise<ReadLock>((resolve, reject) => {
+    /**
+     * Asynchronously waits for and takes a read lock on a resource.
+     *
+     * @param token A CancellationToken used to cancel the request.
+     */
+    public read(token?: CancellationToken): Promise<LockHandle> {
+        return new Promise<LockHandle>((resolve, reject) => {
             if (isMissing(token)) token = CancellationToken.none;
             if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
             token.throwIfCancellationRequested();
@@ -64,8 +56,14 @@ export class ReaderWriterLock {
         });
     }
 
-    public upgradeableRead(token?: CancellationToken): Promise<UpgradeableReadLock> {
-        return new Promise<UpgradeableReadLock>((resolve, reject) => {
+    /**
+     * Asynchronously waits for and takes a read lock on a resource
+     * that can later be upgraded to a write lock.
+     *
+     * @param token A CancellationToken used to cancel the request.
+     */
+    public upgradeableRead(token?: CancellationToken): Promise<UpgradeableLockHandle> {
+        return new Promise<UpgradeableLockHandle>((resolve, reject) => {
             if (isMissing(token)) token = CancellationToken.none;
             if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
             token.throwIfCancellationRequested();
@@ -94,8 +92,13 @@ export class ReaderWriterLock {
         });
     }
 
-    public write(token?: CancellationToken): Promise<WriteLock> {
-        return new Promise<WriteLock>((resolve, reject) => {
+    /**
+     * Asynchronously waits for and takes a write lock on a resource.
+     *
+     * @param token A CancellationToken used to cancel the request.
+     */
+    public write(token?: CancellationToken): Promise<LockHandle> {
+        return new Promise<LockHandle>((resolve, reject) => {
             if (isMissing(token)) token = CancellationToken.none;
             if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
             token.throwIfCancellationRequested();
@@ -124,8 +127,8 @@ export class ReaderWriterLock {
         });
     }
 
-    private _upgrade(token?: CancellationToken): Promise<UpgradeLock> {
-        return new Promise<UpgradeLock>((resolve, reject) => {
+    private _upgrade(token?: CancellationToken): Promise<LockHandle> {
+        return new Promise<LockHandle>((resolve, reject) => {
             if (isMissing(token)) token = CancellationToken.none;
             if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
             token.throwIfCancellationRequested();
@@ -175,7 +178,7 @@ export class ReaderWriterLock {
         }
     }
 
-    private _takeReadLock(): ReadLock {
+    private _takeReadLock(): LockHandle {
         let released = false;
         this._count++;
         return {
@@ -205,7 +208,7 @@ export class ReaderWriterLock {
         }
     }
 
-    private _takeUpgradeableReadLock(): UpgradeableReadLock {
+    private _takeUpgradeableReadLock(): UpgradeableLockHandle {
         const hold = {
             upgrade: (token?: CancellationToken) => {
                 if (this._upgradeable !== hold) throw new Error("Lock already released.");
@@ -253,7 +256,7 @@ export class ReaderWriterLock {
         return false;
     }
 
-    private _takeUpgradeLock(): UpgradeLock {
+    private _takeUpgradeLock(): LockHandle {
         const hold = {
             release: () => {
                 if (this._upgraded !== hold) throw new Error("Lock already released.");
@@ -288,7 +291,7 @@ export class ReaderWriterLock {
         return false;
     }
 
-    private _takeWriteLock(): WriteLock {
+    private _takeWriteLock(): LockHandle {
         let released = false;
         this._count = -1;
         return {
@@ -304,4 +307,26 @@ export class ReaderWriterLock {
         this._count = 0;
         this._processLockRequests();
     }
+}
+
+/**
+ * An object used to release a held lock.
+ */
+export interface LockHandle {
+    /**
+     * Releases the lock.
+     */
+    release(): void;
+}
+
+/**
+ * An object used to release a held lock or upgrade to a write lock.
+ */
+export interface UpgradeableLockHandle extends LockHandle {
+    /**
+     * Upgrades the lock to a write lock.
+     *
+     * @param token A CancellationToken used to cancel the request.
+     */
+    upgrade(token?: CancellationToken): Promise<LockHandle>;
 }
