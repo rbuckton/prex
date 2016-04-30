@@ -1,5 +1,5 @@
 <!--
-Copyright (c) Microsoft Corporation.  
+Copyright (c) Microsoft Corporation.
 Licensed under the Apache License, Version 2.0.
 
 See LICENSE file in the project root for details.
@@ -18,6 +18,7 @@ See LICENSE file in the project root for details.
   * [stack.push(value)](#stackpushvalue)
   * [stack.pop()](#stackpop)
 * [Function: delay(msec, value?)](#function-delaymsec-value)
+* [Function: delay(token, msec, value?)](#function-delaytoken-msec-value)
 
 # Class: AsyncQueue
 An asynchronous queue.
@@ -72,7 +73,20 @@ returns a Promise for the next value to be pushed on to the stack.
 * Returns: [&lt;Promise&gt;][Promise]
 
 # Function: delay(msec, value?)
-Waits the specified number of milliseconds and resolves with the provided value.
+Waits the specified number of milliseconds before resolving with the provided value.
+* `msec` [&lt;Number&gt;][Number] The number of milliseconds to delay.
+* `value` &lt;`any`&gt; The resolution value for the promise.
+* Returns: [&lt;Promise&gt;][Promise]
+
+### Syntax
+```ts
+export declare function delay(token: CancellationToken, msec: number): Promise<void>;
+export declare function delay<T>(token: CancellationToken, msec: number, value?: T | PromiseLike<T>): Promise<T>;
+```
+
+# Function: delay(token, msec, value?)
+Waits the specified number of milliseconds before resolving with the provided value.
+* `token` [&lt;CancellationToken&gt;][CancellationToken] A CancellationToken.
 * `msec` [&lt;Number&gt;][Number] The number of milliseconds to delay.
 * `value` &lt;`any`&gt; The resolution value for the promise.
 * Returns: [&lt;Promise&gt;][Promise]
@@ -86,3 +100,4 @@ export declare function delay<T>(msec: number, value?: T | PromiseLike<T>): Prom
 [Number]: http://ecma-international.org/ecma-262/6.0/index.html#sec-number-constructor
 [Promise]: http://ecma-international.org/ecma-262/6.0/index.html#sec-promise-constructor
 [Iterable]: http://ecma-international.org/ecma-262/6.0/index.html#sec-symbol.iterator
+[CancellationToken]: ./cancellation.md#class-cancellationtoken
