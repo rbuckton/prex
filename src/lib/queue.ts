@@ -30,6 +30,21 @@ export class AsyncQueue<T> {
     }
 
     /**
+     * Gets the number of entries in the queue.
+     * When positive, indicates the number of entries available to get.
+     * When negative, indicates the number of requests waiting to be fulfilled.
+     */
+    public get size() {
+        if (this._available && this._available.length > 0) {
+            return this._available.length;
+        }
+        if (this._pending && this._pending.length > 0) {
+            return -this._pending.length;
+        }
+        return 0;
+    }
+
+    /**
      * Adds a value to the end of the queue. If the queue is empty but has a pending
      * dequeue request, the value will be dequeued and the request fulfilled.
      *

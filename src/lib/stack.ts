@@ -30,6 +30,22 @@ export class AsyncStack<T> {
     }
 
     /**
+     * Gets the number of entries in the stack.
+     * When positive, indicates the number of entries available to get.
+     * When negative, indicates the number of requests waiting to be fulfilled.
+     */
+    public get size() {
+        if (this._available && this._available.length > 0) {
+            return this._available.length;
+        }
+        if (this._pending && this._pending.length > 0) {
+            return -this._pending.length;
+        }
+        return 0;
+    }
+
+
+    /**
      * Adds a value to the top of the stack. If the stack is empty but has a pending
      * pop request, the value will be popped and the request fulfilled.
      *

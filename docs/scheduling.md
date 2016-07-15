@@ -11,10 +11,12 @@ See LICENSE file in the project root for details.
 ### Table of Contents
 * [Class: AsyncQueue](#class-asyncqueue)
   * [new AsyncQueue(iterable?)](#new-asyncqueueiterable)
+  * [queue.size](#queuesize)
   * [queue.put(value)](#queueputvalue)
   * [queue.get()](#queueget)
 * [Class: AsyncStack](#class-asyncstack)
   * [new AsyncStack(iterable?)](#new-asyncstackiterable)
+  * [stack.size](#stacksize)
   * [stack.push(value)](#stackpushvalue)
   * [stack.pop()](#stackpop)
 * [Function: delay(msec, value?)](#function-delaymsec-value)
@@ -35,6 +37,11 @@ export declare class AsyncQueue<T> {
 ## new AsyncQueue(iterable?)
 Initializes a new instance of the AsyncQueue class.
 * `iterable` [&lt;Iterable&gt;][Iterable] An optional iterable of values or promises.
+
+## queue.size
+Gets the number of entries in the queue.
+When positive, indicates the number of entries available to get.
+When negative, indicates the number of requests waiting to be fulfilled.
 
 ## queue.put(value)
 Adds a value to the end of the queue. If the queue is empty but has a pending
@@ -61,6 +68,11 @@ export declare class AsyncStack<T> {
 ## new AsyncStack(iterable?)
 Initializes a new instance of the AsyncStack class.
 * `iterable` [&lt;Iterable&gt;][Iterable] An optional iterable of values or promises.
+
+## stack.size
+Gets the number of entries in the stack.
+When positive, indicates the number of entries available to get.
+When negative, indicates the number of requests waiting to be fulfilled.
 
 ## stack.push(value)
 Adds a value to the top of the stack. If the stack is empty but has a pending
