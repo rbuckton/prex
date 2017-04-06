@@ -12,29 +12,29 @@ describe("cancellation", () => {
     describe("source", () => {
         it("defaults", () => {
             const source = new CancellationTokenSource();
-            assert.isTrue(source.canBeCanceled);
-            assert.isFalse(source.cancellationRequested);
             assert.isDefined(source.token);
             assert.strictEqual(source.token, source.token);
+            assert.isTrue(source.token.canBeCanceled);
+            assert.isFalse(source.token.cancellationRequested);
         });
         it("cancel", async () => {
             const source = new CancellationTokenSource();
             await source.cancel();
-            assert.isTrue(source.canBeCanceled);
-            assert.isTrue(source.cancellationRequested);
+            assert.isTrue(source.token.canBeCanceled);
+            assert.isTrue(source.token.cancellationRequested);
         });
         it("close", () => {
             const source = new CancellationTokenSource();
             source.close();
-            assert.isFalse(source.canBeCanceled);
-            assert.isFalse(source.cancellationRequested);
+            assert.isFalse(source.token.canBeCanceled);
+            assert.isFalse(source.token.cancellationRequested);
         });
         it("linked tokens", async () => {
             const source1 = new CancellationTokenSource();
             const linkedSource = new CancellationTokenSource([source1.token]);
             await source1.cancel();
-            assert.isTrue(linkedSource.canBeCanceled);
-            assert.isTrue(linkedSource.cancellationRequested);
+            assert.isTrue(linkedSource.token.canBeCanceled);
+            assert.isTrue(linkedSource.token.cancellationRequested);
         });
         it("error when not a linked token", () => {
             assert.throws(() => new CancellationTokenSource(<any>[{}]), TypeError);
@@ -43,8 +43,8 @@ describe("cancellation", () => {
             const source1 = new CancellationTokenSource();
             await source1.cancel();
             const linkedSource = new CancellationTokenSource([source1.token]);
-            assert.isTrue(linkedSource.canBeCanceled);
-            assert.isTrue(linkedSource.cancellationRequested);
+            assert.isTrue(linkedSource.token.canBeCanceled);
+            assert.isTrue(linkedSource.token.cancellationRequested);
         });
         it("cancel throws if token registration throws", async () => {
             const source = new CancellationTokenSource();
@@ -62,27 +62,13 @@ describe("cancellation", () => {
         });
         it("register throws when not a function", () => {
             const source = new CancellationTokenSource();
-            assert.throws(() => source.register(<any>{}), TypeError);
+            assert.throws(() => source.token.register(<any>{}), TypeError);
         });
     });
 
     describe("token", () => {
         it("ctor throws when not a CancellationTokenSource", () => {
             assert.throws(() => new CancellationToken(<any>{}), TypeError);
-        });
-        it("defaults", () => {
-            const source = new CancellationTokenSource();
-            const token = source.token;
-            assert.isTrue(Object.isFrozen(token));
-            assert.isTrue(token.canBeCanceled);
-            assert.isFalse(token.cancellationRequested);
-        });
-        it("cancel", async () => {
-            const source = new CancellationTokenSource();
-            const token = source.token;
-            await source.cancel();
-            assert.isTrue(token.canBeCanceled);
-            assert.isTrue(token.cancellationRequested);
         });
         it("throwIfCancellationRequested when not canceled", () => {
             const source = new CancellationTokenSource();

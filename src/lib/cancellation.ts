@@ -64,14 +64,14 @@ export class CancellationTokenSource {
     /**
      * Gets a value indicating whether cancellation has been requested.
      */
-    public get cancellationRequested(): boolean {
+    /*@internal*/ get _cancellationRequested(): boolean {
         return this._state === "cancellationRequested";
     }
 
     /**
      * Gets a value indicating whether the source can be canceled.
      */
-    public get canBeCanceled(): boolean {
+    /*@internal*/ get _canBeCanceled(): boolean {
         return this._state !== "closed";
     }
 
@@ -136,7 +136,7 @@ export class CancellationTokenSource {
      *
      * @param callback The callback to register.
      */
-    public register(callback: () => void): CancellationTokenRegistration {
+    /*@internal*/ _register(callback: () => void): CancellationTokenRegistration {
         if (!isFunction(callback)) throw new TypeError("Function expected: callback.");
 
         if (this._state === "requested") {
@@ -248,14 +248,14 @@ export class CancellationToken {
      * Gets a value indicating whether cancellation has been requested.
      */
     public get cancellationRequested(): boolean {
-        return this._source.cancellationRequested;
+        return this._source._cancellationRequested;
     }
 
     /**
      * Gets a value indicating whether the underlying source can be canceled.
      */
     public get canBeCanceled(): boolean {
-        return this._source.canBeCanceled;
+        return this._source._canBeCanceled;
     }
 
     /**
@@ -273,7 +273,7 @@ export class CancellationToken {
      * @param callback The callback to register.
      */
     public register(callback: () => void): CancellationTokenRegistration {
-        return this._source.register(callback);
+        return this._source._register(callback);
     }
 }
 

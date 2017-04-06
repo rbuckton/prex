@@ -38,11 +38,8 @@ Signals a [CancellationToken](#class-cancellationtoken) that it should be cancel
 export declare class CancellationTokenSource {
     constructor(linkedTokens?: Iterable<CancellationToken>);
     readonly token: CancellationToken;
-    readonly cancellationRequested: boolean;
-    readonly canBeCanceled: boolean;
     cancel(): Promise<void>;
     close(): void;
-    register(callback: () => void): CancellationTokenRegistration;
 }
 ```
 
@@ -50,17 +47,18 @@ export declare class CancellationTokenSource {
 Initializes a new instance of a CancellationTokenSource.
 * `linkedTokens` [&lt;Iterable&gt;][Iterable] An optional iterable of tokens to which to link this source.
 
+By supplying a set of linked tokens, you can model a complex cancellation graph that allows you to signal 
+cancellation to various subsets of a more complex asynchronous operation. For example, you can create a 
+cancellation hierarchy where a root `CancellationTokenSource` can be used to signal cancellation for all
+asynchronous operations (such as when signing out of an application), with linked `CancellationTokenSource` 
+children used to signal cancellation for subsets such as fetching pages of asynchronous data or stopping
+long-running background operations in a Web Worker. You can also create a `CancellationTokenSource` that
+is attached to multiple existing tokens, allowing you to aggregate multiple cancellation signals into
+a single token.
+
 ## source.token
 Gets a CancellationToken linked to this source.
 * Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
-
-## source.cancellationRequested
-Gets a value indicating whether cancellation has been requested.
-* Returns: [&lt;Boolean&gt;][Boolean]
-
-## source.canBeCanceled
-Gets a value indicating whether the source can be canceled.
-* Returns: [&lt;Boolean&gt;][Boolean]
 
 ## source.cancel()
 Cancels the source, returning a Promise that is settled when cancellation has completed.
@@ -72,12 +70,6 @@ the first such exception can be observed by awaiting the return value of this me
 
 ## source.close()
 Closes the source, preventing the possibility of future cancellation.
-
-## source.register(callback)
-Registers a callback to execute when cancellation has been requested. If cancellation has
-already been requested, the callback is executed immediately.
-* `callback` [&lt;Function&gt;](http://ecma-international.org/ecma-262/6.0/index.html#sec-function-constructor) The callback to register.
-* Returns: [&lt;CancellationTokenRegistration&gt;](#class-cancellationtokenregistration)
 
 # Class: CancellationToken
 Propagates notifications that operations should be canceled.
