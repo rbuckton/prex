@@ -74,9 +74,9 @@ Propagates notifications that operations should be canceled.
 ### Syntax
 ```ts
 export declare class CancellationToken {
+    constructor(canceled?: boolean);
     static readonly none: CancellationToken;
     static readonly canceled: CancellationToken;
-    constructor(canceled?: boolean);
     readonly cancellationRequested: boolean;
     readonly canBeCanceled: boolean;
     throwIfCancellationRequested(): void;
