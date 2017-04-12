@@ -92,8 +92,8 @@ Waits the specified number of milliseconds before resolving with the provided va
 
 ### Syntax
 ```ts
-export declare function delay(token: CancellationToken, msec: number): Promise<void>;
-export declare function delay<T>(token: CancellationToken, msec: number, value?: T | PromiseLike<T>): Promise<T>;
+export declare function delay(msec: number): Promise<void>;
+export declare function delay<T>(msec: number, value?: T | PromiseLike<T>): Promise<T>;
 ```
 
 # Function: delay(token, msec, value?)
@@ -105,8 +105,8 @@ Waits the specified number of milliseconds before resolving with the provided va
 
 ### Syntax
 ```ts
-export declare function delay(msec: number): Promise<void>;
-export declare function delay<T>(msec: number, value?: T | PromiseLike<T>): Promise<T>;
+export declare function delay(token: CancellationToken, msec: number): Promise<void>;
+export declare function delay<T>(token: CancellationToken, msec: number, value?: T | PromiseLike<T>): Promise<T>;
 ```
 
 [Number]: http://ecma-international.org/ecma-262/6.0/index.html#sec-number-constructor
