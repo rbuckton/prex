@@ -1,5 +1,5 @@
 <!--
-Copyright (c) Microsoft Corporation.  
+Copyright (c) Microsoft Corporation.
 Licensed under the Apache License, Version 2.0.
 
 See LICENSE file in the project root for details.
@@ -95,7 +95,7 @@ async function main() {
     const source = new CancellationTokenSource();
 
     // cancel the source if the file takes more than one second to download
-    setTimeout(1000, () => source.cancel());
+    setTimeout(() => source.cancel(), 1000);
 
     await downloadFile("http://tempuri.org/some/file", "file", source.token);
 }
@@ -202,7 +202,7 @@ async function processWorkItems() {
 ```
 
 # License
-Copyright (c) Microsoft Corporation.  
+Copyright (c) Microsoft Corporation.
 Licensed under the Apache License, Version 2.0.
 
 See [LICENSE](LICENSE) file in the project root for details.
