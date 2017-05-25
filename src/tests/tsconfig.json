@@ -4,6 +4,7 @@
     "module": "commonjs",
     "stripInternal": true,
     "declaration": true,
-    "outDir": "../../out/test"
+    "outDir": "../../out/test",
+    "types": ["node", "mocha"]
   }
 }
