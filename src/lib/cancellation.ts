@@ -76,36 +76,26 @@ export class CancellationTokenSource {
     }
 
     /**
-     * Cancels the source, returning a Promise that is settled when cancellation has completed.
-     * Any registered callbacks are executed in a later turn. If any callback raises an exception,
-     * the first such exception can be observed by awaiting the return value of this method.
+     * Cancels the source, evaluating any registered callbacks. If any callback raises an exception,
+     * the exception is propagated to a host specific unhanedle exception mechanism.
      */
-    public cancel(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            if (this._state !== "open") {
-                resolve();
-                return;
+    public cancel(): void {
+        if (this._state !== "open") {
+            return;
+        }
+
+        this._state = "cancellationRequested";
+        this._unlink();
+
+        const callbacks = this._callbacks;
+        this._callbacks = undefined;
+
+        if (callbacks && callbacks.size > 0) {
+            const pendingOperations: Promise<void>[] = [];
+            for (const callback of callbacks) {
+                this._executeCallback(callback);
             }
-
-            this._state = "cancellationRequested";
-            this._unlink();
-
-            const callbacks = this._callbacks;
-            this._callbacks = undefined;
-
-            if (callbacks && callbacks.size > 0) {
-                const pendingOperations: Promise<void>[] = [];
-                for (const callback of callbacks) {
-                    pendingOperations.push(this._executeCallback(callback));
-                }
-
-                // await all pending operations
-                Promise.all(pendingOperations).then(() => resolve(), reject);
-                return;
-            }
-
-            resolve();
-        });
+        }
     }
 
     /**
@@ -139,8 +129,8 @@ export class CancellationTokenSource {
     /*@internal*/ _register(callback: () => void): CancellationTokenRegistration {
         if (!isFunction(callback)) throw new TypeError("Function expected: callback.");
 
-        if (this._state === "requested") {
-            callback();
+        if (this._state === "cancellationRequested") {
+            this._executeCallback(callback);
         }
 
         if (this._state !== "open") {
@@ -171,14 +161,18 @@ export class CancellationTokenSource {
     }
 
     /**
-     * Executes the provided callback in a later turn.
+     * Executes the provided callback.
      *
      * @param callback The callback to execute.
      */
-    private _executeCallback(callback: () => void): Promise<void> {
-        return Promise.resolve().then(() => {
+    private _executeCallback(callback: () => void): void {
+        try {
             callback();
-        });
+        }
+        catch (e) {
+            // HostReportError(e)
+            setTimeout(() => { throw e; }, 0);
+        }
     }
 
     /**
@@ -220,11 +214,7 @@ export class CancellationToken {
 
     private _source: CancellationTokenSource;
 
-    /**
-     * Creates a new instance of a CancellationToken.
-     *
-     * @param canceled An optional value indicating whether the token is canceled.
-     */
+    /*@internal*/
     constructor(canceled?: boolean);
 
     /*@internal*/
@@ -298,4 +288,4 @@ export interface CancellationTokenRegistration {
     unregister(): void;
 }
 
-const emptyRegistration: CancellationTokenRegistration = Object.create({ unregister() { }})
+const emptyRegistration: CancellationTokenRegistration = Object.create({ unregister() { } });

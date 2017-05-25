@@ -49,24 +49,15 @@ describe("autoresetevent", () => {
             const event = new AutoResetEvent();
             const source = new CancellationTokenSource();
             const waitPromise = event.wait(source.token);
-            await source.cancel();
+            source.cancel();
             await assert.throwsAsync(() => waitPromise, CancelError);
-        });
-        it("when canceled after wait but before set", async () => {
-            const event = new AutoResetEvent();
-            const source = new CancellationTokenSource();
-            const waitPromise = event.wait(source.token);
-            const cancelPromise = source.cancel();
-            event.set();
-            await cancelPromise;
-            await waitPromise;
         });
         it("when canceled after set", async () => {
             const event = new AutoResetEvent();
             const source = new CancellationTokenSource();
             const waitPromise = event.wait(source.token);
             event.set();
-            await source.cancel();
+            source.cancel();
             await waitPromise;
         });
         it("throws if token not CancellationToken", async () => {
@@ -119,7 +110,7 @@ describe("autoresetevent", () => {
                 steps.push("set1");
                 event.set();
 
-                await Promise.resolve();
+                await delay(1);
 
                 steps.push("set2");
                 event.set();

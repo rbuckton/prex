@@ -1,11 +1,12 @@
 /*! *****************************************************************************
-Copyright (c) Microsoft Corporation. 
-Licensed under the Apache License, Version 2.0. 
+Copyright (c) Microsoft Corporation.
+Licensed under the Apache License, Version 2.0.
 
 See LICENSE file in the project root for details.
 ***************************************************************************** */
 
 import { assert } from "chai";
+import { create } from "domain";
 import { CancellationTokenSource, CancellationToken, CancellationTokenRegistration, CancelError } from "../lib";
 
 describe("cancellation", () => {
@@ -17,9 +18,9 @@ describe("cancellation", () => {
             assert.isTrue(source.token.canBeCanceled);
             assert.isFalse(source.token.cancellationRequested);
         });
-        it("cancel", async () => {
+        it("cancel", () => {
             const source = new CancellationTokenSource();
-            await source.cancel();
+            source.cancel();
             assert.isTrue(source.token.canBeCanceled);
             assert.isTrue(source.token.cancellationRequested);
         });
@@ -29,36 +30,41 @@ describe("cancellation", () => {
             assert.isFalse(source.token.canBeCanceled);
             assert.isFalse(source.token.cancellationRequested);
         });
-        it("linked tokens", async () => {
+        it("linked tokens", () => {
             const source1 = new CancellationTokenSource();
             const linkedSource = new CancellationTokenSource([source1.token]);
-            await source1.cancel();
+            source1.cancel();
             assert.isTrue(linkedSource.token.canBeCanceled);
             assert.isTrue(linkedSource.token.cancellationRequested);
         });
         it("error when not a linked token", () => {
             assert.throws(() => new CancellationTokenSource(<any>[{}]), TypeError);
         });
-        it("linked tokens already canceled", async () => {
+        it("linked tokens already canceled", () => {
             const source1 = new CancellationTokenSource();
-            await source1.cancel();
+            source1.cancel();
             const linkedSource = new CancellationTokenSource([source1.token]);
             assert.isTrue(linkedSource.token.canBeCanceled);
             assert.isTrue(linkedSource.token.cancellationRequested);
         });
-        it("cancel throws if token registration throws", async () => {
-            const source = new CancellationTokenSource();
-            const token = source.token;
+        it("cancel throws if token registration throws", (done) => {
             const error = new Error("Error during registration.");
-            const registration = token.register(() => { throw error; });
-            let caughtError: Error;
-            try {
-                await source.cancel();
-            }
-            catch (e) {
-                caughtError = e;
-            }
-            assert.strictEqual(caughtError, error);
+            const domain = create();
+            domain.on("error", e => {
+                try {
+                    assert.strictEqual(e, error);
+                    done();
+                }
+                catch (e) {
+                    done(e);
+                }
+            });
+            domain.run(() => {
+                const source = new CancellationTokenSource();
+                const token = source.token;
+                const registration = token.register(() => { throw error; });
+                source.cancel();
+            });
         });
         it("register throws when not a function", () => {
             const source = new CancellationTokenSource();
@@ -75,10 +81,10 @@ describe("cancellation", () => {
             const token = source.token;
             assert.doesNotThrow(() => token.throwIfCancellationRequested());
         });
-        it("throwIfCancellationRequested when canceled", async () => {
+        it("throwIfCancellationRequested when canceled", () => {
             const source = new CancellationTokenSource();
             const token = source.token;
-            await source.cancel();
+            source.cancel();
             assert.throws(() => token.throwIfCancellationRequested(), CancelError);
         });
         it("close", () => {
@@ -94,10 +100,10 @@ describe("cancellation", () => {
             assert.isFalse(token.canBeCanceled);
             assert.isFalse(token.cancellationRequested);
         });
-        it("new token for source", async () => {
+        it("new token for source", () => {
             const source = new CancellationTokenSource();
             const token = new CancellationToken(source);
-            await source.cancel();
+            source.cancel();
             assert.notStrictEqual(source.token, token);
             assert.isTrue(token.canBeCanceled);
             assert.isTrue(token.cancellationRequested);
@@ -109,43 +115,31 @@ describe("cancellation", () => {
     });
 
     describe("registration", () => {
-        it("cancel", async () => {
+        it("cancel", () => {
             const source = new CancellationTokenSource();
             const token = source.token;
             let callbackInvocations = 0;
             const registration = token.register(() => callbackInvocations++);
-            await source.cancel();
-            await source.cancel();
+            source.cancel();
+            source.cancel();
             assert.strictEqual(callbackInvocations, 1);
         });
-        it("cancel (after unregistered)", async () => {
+        it("cancel (after unregistered)", () => {
             const source = new CancellationTokenSource();
             const token = source.token;
             let callbackInvocations = 0;
             const registration = token.register(() => callbackInvocations++);
             registration.unregister();
-            await source.cancel();
+            source.cancel();
             assert.strictEqual(callbackInvocations, 0);
         });
-        it("cancel executes in later turn", async () => {
-            const source = new CancellationTokenSource();
-            const token = source.token;
-            let callbackInvocations = 0;
-            const registration = token.register(() => callbackInvocations++);
-            const cancelPromise = source.cancel();
-            const callbackInvocationsInitialTurn = callbackInvocations;
-            await cancelPromise;
-            const callbackInvocationsLaterTurn = callbackInvocations;
-            assert.strictEqual(callbackInvocationsInitialTurn, 0);
-            assert.strictEqual(callbackInvocationsLaterTurn, 1);
-        });
-        it("close", async () => {
+        it("close", () => {
             const source = new CancellationTokenSource();
             const token = source.token;
             let callbackInvocations = 0;
             const registration = token.register(() => callbackInvocations++);
             source.close();
-            await source.cancel();
+            source.cancel();
             assert.strictEqual(callbackInvocations, 0);
         });
     });
