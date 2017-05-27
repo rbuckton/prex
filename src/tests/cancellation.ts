@@ -37,6 +37,27 @@ describe("cancellation", () => {
             assert.isTrue(linkedSource.token.canBeCanceled);
             assert.isTrue(linkedSource.token.cancellationRequested);
         });
+        it("linked tokens state observed immediately", () => {
+            const mainSource = new CancellationTokenSource();
+            const sourceA = new CancellationTokenSource([mainSource.token]);
+            const sourceB = new CancellationTokenSource([mainSource.token]);
+            const sourceChild = new CancellationTokenSource([sourceA.token, sourceB.token]);
+            let mainRequested: boolean;
+            let aRequested: boolean;
+            let bRequested: boolean;
+            let childRequested: boolean;
+            sourceChild.token.register(() => {
+                mainRequested = mainSource.token.cancellationRequested;
+                aRequested = sourceA.token.cancellationRequested;
+                bRequested = sourceB.token.cancellationRequested;
+                childRequested = sourceChild.token.cancellationRequested;
+            });
+            mainSource.cancel();
+            assert.isTrue(mainRequested);
+            assert.isTrue(aRequested);
+            assert.isTrue(bRequested);
+            assert.isTrue(childRequested);
+        });
         it("error when not a linked token", () => {
             assert.throws(() => new CancellationTokenSource(<any>[{}]), TypeError);
         });

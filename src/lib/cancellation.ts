@@ -17,10 +17,10 @@ type CancellationState =
  * Signals a CancellationToken that it should be canceled.
  */
 export class CancellationTokenSource {
-    private _callbacks: LinkedList<() => void> = undefined;
-    private _linkingRegistrations: CancellationTokenRegistration[] = undefined;
-    private _token: CancellationToken = undefined;
     private _state: CancellationState = "open";
+    private _token: CancellationToken = undefined;
+    private _registrations: LinkedList<CancellationTokenRegistration> = undefined;
+    private _linkingRegistrations: CancellationTokenRegistration[] = undefined;
 
     /**
      * Initializes a new instance of a CancellationTokenSource.
@@ -43,7 +43,6 @@ export class CancellationTokenSource {
                     if (this._linkingRegistrations === undefined) {
                         this._linkingRegistrations = [];
                     }
-
                     this._linkingRegistrations.push(linkedToken.register(() => this.cancel()))
                 }
             }
@@ -61,18 +60,29 @@ export class CancellationTokenSource {
         return this._token;
     }
 
+    /*@internal*/ get _currentState(): CancellationState {
+        if (this._state === "open" && this._linkingRegistrations && this._linkingRegistrations.length > 0) {
+            for (const registration of this._linkingRegistrations) {
+                if (registration._cancellationSource._currentState === "cancellationRequested") {
+                    return "cancellationRequested";
+                }
+            }
+        }
+        return this._state;
+    }
+
     /**
      * Gets a value indicating whether cancellation has been requested.
      */
     /*@internal*/ get _cancellationRequested(): boolean {
-        return this._state === "cancellationRequested";
+        return this._currentState === "cancellationRequested";
     }
 
     /**
      * Gets a value indicating whether the source can be canceled.
      */
     /*@internal*/ get _canBeCanceled(): boolean {
-        return this._state !== "closed";
+        return this._currentState !== "closed";
     }
 
     /**
@@ -87,13 +97,12 @@ export class CancellationTokenSource {
         this._state = "cancellationRequested";
         this._unlink();
 
-        const callbacks = this._callbacks;
-        this._callbacks = undefined;
+        const registrations = this._registrations;
+        this._registrations = undefined;
 
-        if (callbacks && callbacks.size > 0) {
-            const pendingOperations: Promise<void>[] = [];
-            for (const callback of callbacks) {
-                this._executeCallback(callback);
+        if (registrations && registrations.size > 0) {
+            for (const registration of registrations) {
+                this._executeCallback(registration._cancellationTarget);
             }
         }
     }
@@ -109,8 +118,8 @@ export class CancellationTokenSource {
         this._state = "closed";
         this._unlink();
 
-        const callbacks = this._callbacks;
-        this._callbacks = undefined;
+        const callbacks = this._registrations;
+        this._registrations = undefined;
 
         if (callbacks !== undefined) {
             // The registration for each callback holds onto the node, the node holds onto the
@@ -131,33 +140,31 @@ export class CancellationTokenSource {
 
         if (this._state === "cancellationRequested") {
             this._executeCallback(callback);
-        }
-
-        if (this._state !== "open") {
             return emptyRegistration;
         }
 
-        if (this._callbacks === undefined) {
-            this._callbacks = new LinkedList<() => void>();
+        if (this._state === "closed") {
+            return emptyRegistration;
         }
 
-        const node = this._callbacks.push(() => {
-            if (node.list) {
-                node.list.deleteNode(node);
-                callback();
+        if (this._registrations === undefined) {
+            this._registrations = new LinkedList<CancellationTokenRegistration>();
+        }
+
+        const node = this._registrations.push({
+            _cancellationSource: this,
+            _cancellationTarget: callback,
+            unregister(this: CancellationTokenRegistration): void {
+                if (this._cancellationSource === undefined) return;
+                if (this._cancellationSource._registrations) {
+                    this._cancellationSource._registrations.deleteNode(node);
+                }
+                this._cancellationSource = undefined;
+                this._cancellationTarget = undefined;
             }
         });
 
-        const registration = {
-            unregister(): void {
-                // When the callback is unregistered, remove the node from its list.
-                if (node.list) {
-                    node.list.deleteNode(node);
-                }
-            }
-        };
-
-        return registration;
+        return node.value;
     }
 
     /**
@@ -282,6 +289,8 @@ CancelError.prototype.name = "CancelError";
  * An object used to unregister a callback registered to a CancellationToken.
  */
 export interface CancellationTokenRegistration {
+    /*@internal*/ _cancellationSource: CancellationTokenSource;
+    /*@internal*/ _cancellationTarget: () => void;
     /**
      * Unregisters the callback
      */
