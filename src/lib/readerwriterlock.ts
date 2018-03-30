@@ -17,8 +17,8 @@ export class ReaderWriterLock {
     private _upgradeables = new LinkedList<() => void>();
     private _upgrades = new LinkedList<() => void>();
     private _writers = new LinkedList<() => void>();
-    private _upgradeable: UpgradeableLockHandle;
-    private _upgraded: LockHandle;
+    private _upgradeable: UpgradeableLockHandle | undefined;
+    private _upgraded: LockHandle | undefined;
     private _count = 0;
 
     /**
@@ -39,7 +39,7 @@ export class ReaderWriterLock {
 
             const node = this._readers.push(() => {
                 registration.unregister();
-                if (token.cancellationRequested) {
+                if (token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -75,7 +75,7 @@ export class ReaderWriterLock {
 
             const node = this._upgradeables.push(() => {
                 registration.unregister();
-                if (token.cancellationRequested) {
+                if (token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -110,7 +110,7 @@ export class ReaderWriterLock {
 
             const node = this._writers.push(() => {
                 registration.unregister();
-                if (token.cancellationRequested) {
+                if (token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -140,7 +140,7 @@ export class ReaderWriterLock {
 
             const node = this._upgrades.push(() => {
                 registration.unregister();
-                if (token.cancellationRequested) {
+                if (token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -233,8 +233,8 @@ export class ReaderWriterLock {
             this._count--;
         }
 
-        this._upgraded = null;
-        this._upgradeable = null;
+        this._upgraded = undefined;
+        this._upgradeable = undefined;
         this._processLockRequests();
     }
 
@@ -270,7 +270,7 @@ export class ReaderWriterLock {
     }
 
     private _releaseUpgradeLock(): void {
-        this._upgraded = null;
+        this._upgraded = undefined;
         this._count = 1;
         this._processLockRequests();
     }

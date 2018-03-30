@@ -8,30 +8,30 @@ See LICENSE file in the project root for details.
 import { isMissing, isIterable, isInstance, isFunction } from "./utils";
 
 export class LinkedListNode<T> {
-    /*@internal*/ _list: LinkedList<T> = undefined;
-    /*@internal*/ _previous: LinkedListNode<T> = undefined;
-    /*@internal*/ _next: LinkedListNode<T> = undefined;
+    /*@internal*/ _list: LinkedList<T> | undefined = undefined;
+    /*@internal*/ _previous: LinkedListNode<T> | undefined = undefined;
+    /*@internal*/ _next: LinkedListNode<T> | undefined = undefined;
 
-    public value: T;
+    public value: T | undefined;
 
-    constructor (value?: T) {
+    constructor(value?: T) {
         this.value = value;
     }
 
-    public get list(): LinkedList<T> {
+    public get list(): LinkedList<T> | undefined {
         return this._list;
     }
 
-    public get previous(): LinkedListNode<T> {
-        if (this._previous && this !== this._list.first) {
+    public get previous(): LinkedListNode<T> | undefined {
+        if (this._previous && this._list && this !== this._list.first) {
             return this._previous;
         }
 
         return undefined;
     }
 
-    public get next(): LinkedListNode<T> {
-        if (this._next && this._next !== this._list.first) {
+    public get next(): LinkedListNode<T> | undefined {
+        if (this._next && this._list && this._next !== this._list.first) {
             return this._next;
         }
 
@@ -45,7 +45,7 @@ const enum Position {
 }
 
 export class LinkedList<T> {
-    private _head: LinkedListNode<T> = undefined;
+    private _head: LinkedListNode<T> | undefined = undefined;
     private _size: number = 0;
 
     public constructor(iterable?: Iterable<T>) {
@@ -57,11 +57,11 @@ export class LinkedList<T> {
         }
     }
 
-    public get first(): LinkedListNode<T> {
+    public get first(): LinkedListNode<T> | undefined {
         return this._head;
     }
 
-    public get last(): LinkedListNode<T> {
+    public get last(): LinkedListNode<T> | undefined {
         if (this._head) {
             return this._head._previous;
         }
@@ -96,7 +96,7 @@ export class LinkedList<T> {
         }
     }
 
-    public find(value: T): LinkedListNode<T> {
+    public find(value: T): LinkedListNode<T> | undefined {
         for (let node = this.first; node; node = node.next) {
             if (sameValue(node.value, value)) {
                 return node;
@@ -106,7 +106,7 @@ export class LinkedList<T> {
         return undefined;
     }
 
-    public findLast(value: T): LinkedListNode<T> {
+    public findLast(value: T): LinkedListNode<T> | undefined {
         for (let node = this.last; node; node = node.previous) {
             if (sameValue(node.value, value)) {
                 return node;
@@ -158,24 +158,24 @@ export class LinkedList<T> {
         this._insertNode(undefined, newNode, Position.after);
     }
 
-    public pop(): T {
+    public pop(): T | undefined {
         let node = this.popNode();
         return node ? node.value : undefined;
     }
 
-    public popNode(): LinkedListNode<T> {
+    public popNode(): LinkedListNode<T> | undefined {
         let node = this.last;
         if (this.deleteNode(node)) {
             return node;
         }
     }
 
-    public shift(): T {
+    public shift(): T | undefined {
         let node = this.shiftNode();
         return node ? node.value : undefined;
     }
 
-    public shiftNode(): LinkedListNode<T> {
+    public shiftNode(): LinkedListNode<T> | undefined {
         let node = this.first;
         if (this.deleteNode(node)) {
             return node;
@@ -196,7 +196,7 @@ export class LinkedList<T> {
         return this.deleteNode(this.find(value));
     }
 
-    public deleteNode(node: LinkedListNode<T>): boolean {
+    public deleteNode(node: LinkedListNode<T> | undefined): boolean {
         if (isMissing(node) || node.list !== this) {
             return false;
         }
@@ -239,8 +239,8 @@ export class LinkedList<T> {
             this._head = undefined;
         }
         else {
-            node._next._previous = node._previous;
-            node._previous._next = node._next;
+            node._next!._previous = node._previous;
+            node._previous!._next = node._next;
             if (this._head === node) {
                 this._head = node._next;
             }
@@ -253,7 +253,7 @@ export class LinkedList<T> {
         return true;
     }
 
-    private _insertNode(adjacentNode: LinkedListNode<T>, newNode: LinkedListNode<T>, position: Position) {
+    private _insertNode(adjacentNode: LinkedListNode<T> | undefined, newNode: LinkedListNode<T>, position: Position) {
         newNode._list = this;
         if (this._head === undefined) {
             newNode._next = newNode;
@@ -273,18 +273,18 @@ export class LinkedList<T> {
 
                     newNode._next = adjacentNode;
                     newNode._previous = adjacentNode._previous;
-                    adjacentNode._previous._next = newNode;
+                    adjacentNode._previous!._next = newNode;
                     adjacentNode._previous = newNode;
                     break;
 
                 case Position.after:
                     if (adjacentNode === undefined) {
-                        adjacentNode = this._head._previous;
+                        adjacentNode = this._head._previous!;
                     }
 
                     newNode._previous = adjacentNode;
                     newNode._next = adjacentNode._next;
-                    adjacentNode._next._previous = newNode;
+                    adjacentNode._next!._previous = newNode;
                     adjacentNode._next = newNode;
                     break;
             }

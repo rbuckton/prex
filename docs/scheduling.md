@@ -14,6 +14,13 @@ See LICENSE file in the project root for details.
   * [queue.size](#queuesize)
   * [queue.put(value)](#queueputvalue)
   * [queue.get()](#queueget)
+* [Class: AsyncBoundedQueue](#class-asyncboundedqueue)
+  * [new AsyncBoundedQueue(iterable?)](#new-asyncboundedqueueiterable)
+  * [queue.size](#queuesize)
+  * [queue.put(value)](#queueputvalue)
+  * [queue.end()](#queueend)
+  * [queue.get()](#queueget)
+  * [queue.drain()](#queuedrain)
 * [Class: AsyncStack](#class-asyncstack)
   * [new AsyncStack(iterable?)](#new-asyncstackiterable)
   * [stack.size](#stacksize)
@@ -52,6 +59,46 @@ dequeue request, the value will be dequeued and the request fulfilled.
 Removes and returns a Promise for the first value in the queue. If the queue is empty,
 returns a Promise for the next value to be added to the queue.
 * Returns: [&lt;Promise&gt;][Promise]
+
+# Class: AsyncBoundedQueue
+An asynchronous queue with a bounded endpoint.
+
+### Syntax
+```ts
+export declare class AsyncBoundedQueue<T> {
+    constructor(iterable?: Iterable<T | PromiseLike<T>>);
+    put(value: T | PromiseLike<T>): void;
+    end(): void;
+    get(): Promise<T | undefined>;
+    drain(): AsyncIterableIterator<T>;
+}
+```
+
+## new AsyncBoundedQueue(iterable?)
+Initializes a new instance of the AsyncBoundedQueue class.
+* `iterable` [&lt;Iterable&gt;][Iterable] An optional iterable of values or promises.
+
+## queue.size
+Gets the number of entries in the queue.
+When positive, indicates the number of entries available to get.
+When negative, indicates the number of requests waiting to be fulfilled.
+
+## queue.put(value)
+Adds a value to the end of the queue. If the queue is empty but has a pending
+dequeue request, the value will be dequeued and the request fulfilled.
+* `value` &lt;`any`&gt; A value or promise to add to the queue.
+
+## queue.end()
+Indicates the queue is done adding and that no more items will be added to the queue.
+
+## queue.get()
+Removes and returns a Promise for the first value in the queue. If the queue has
+ended, returns a Promise for `undefined`. If the queue is empty, returns a Promise 
+for the next value to be added to the queue.
+* Returns: [&lt;Promise&gt;][Promise]
+
+## queue.drain()
+Consumes all items in the queue until the queue ends.
 
 # Class: AsyncStack
 An asynchronous stack.

@@ -41,7 +41,7 @@ export class ManualResetEvent {
         if (!this._signaled) {
             this._signaled = true;
             for (const waiter of this._waiters.drain()) {
-                waiter();
+                if (waiter) waiter();
             }
         }
     }
@@ -71,7 +71,7 @@ export class ManualResetEvent {
 
             const node = this._waiters.push(() => {
                 registration.unregister();
-                if (token.cancellationRequested) {
+                if (token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {

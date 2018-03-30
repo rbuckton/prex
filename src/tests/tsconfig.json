@@ -5,6 +5,7 @@
     "stripInternal": true,
     "declaration": true,
     "outDir": "../../out/test",
+    "lib": ["esnext", "dom"],
     "types": ["node", "mocha"]
   }
 }

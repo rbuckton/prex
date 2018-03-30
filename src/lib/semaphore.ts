@@ -64,7 +64,7 @@ export class Semaphore {
 
             const node = this._waiters.push(() => {
                 registration.unregister();
-                if (token.cancellationRequested) {
+                if (token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {

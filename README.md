@@ -43,6 +43,7 @@ npm install prex
         * [Class: Deferred](docs/coordination.md#class-deferred)
     * [Scheduling](docs/scheduling.md)
         * [Class: AsyncQueue](docs/scheduling.md#class-asyncqueue)
+        * [Class: AsyncBoundedQueue](docs/scheduling.md#class-asyncboundedqueue)
         * [Class: AsyncStack](docs/scheduling.md#class-asyncstack)
         * [Function: delay(msec, value?)](docs/scheduling.md#function-delaymsec-value)
 

@@ -2,8 +2,10 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
+    "lib": ["esnext", "dom"],
     "stripInternal": true,
     "declaration": true,
-    "outDir": "../../out/lib"
+    "outDir": "../../out/lib",
+    "strict": true
   }
 }

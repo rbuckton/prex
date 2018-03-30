@@ -15,7 +15,7 @@ import { isMissing, isFunction, isNumber, isObject, isInstance } from "./utils";
  */
 export class Barrier {
     private _isExecutingPostPhaseAction = false;
-    private _postPhaseAction: (barrier: Barrier) => void | PromiseLike<void>;
+    private _postPhaseAction: ((barrier: Barrier) => void | PromiseLike<void>) | undefined;
     private _phaseNumber: number = 0;
     private _participantCount: number;
     private _remainingParticipants: number;
@@ -110,7 +110,7 @@ export class Barrier {
             const node = this._waiters.push({
                 resolve: () => {
                     registration.unregister();
-                    if (token.cancellationRequested) {
+                    if (token!.cancellationRequested) {
                         reject(new CancelError());
                     }
                     else {
@@ -119,7 +119,7 @@ export class Barrier {
                 },
                 reject: reason => {
                     registration.unregister();
-                    if (token.cancellationRequested) {
+                    if (token!.cancellationRequested) {
                         reject(new CancelError());
                     }
                     else {
@@ -167,14 +167,14 @@ export class Barrier {
     private _resolveNextPhase() {
         this._nextPhase();
         for (const deferred of this._waiters.drain()) {
-            deferred.resolve();
+            if (deferred) deferred.resolve();
         }
     }
 
     private _rejectNextPhase(error: any) {
         this._nextPhase();
         for (const deferred of this._waiters.drain()) {
-            deferred.reject(error);
+            if (deferred) deferred.reject(error);
         }
     }
 }

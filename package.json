@@ -1,6 +1,6 @@
 {
   "name": "prex",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Async coordination primitives and extensions on top of ES6 Promises",
   "license": "Apache-2.0",
   "keywords": [
@@ -40,7 +40,7 @@
     "merge2": "^0.3.6",
     "mocha": "^2.2.5",
     "source-map-support": "^0.2.10",
-    "typescript": "^2.4.0-dev.20170525"
+    "typescript": "^2.8.1"
   },
   "author": {
     "name": "Ron Buckton",

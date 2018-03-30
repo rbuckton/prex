@@ -11,8 +11,8 @@ import { isMissing, isObject, isIterable, isInstance } from "./utils";
  * An asynchronous Stack.
  */
 export class AsyncStack<T> {
-    private _available: Array<Promise<T>> = undefined;
-    private _pending: Array<(value: T | PromiseLike<T>) => void> = undefined;
+    private _available: Array<Promise<T>> | undefined = undefined;
+    private _pending: Array<(value: T | PromiseLike<T>) => void> | undefined = undefined;
 
     /**
      * Initializes a new instance of the AsyncStack class.
@@ -83,6 +83,6 @@ export class AsyncStack<T> {
             this._pending = [];
         }
 
-        return new Promise<T>(resolve => { this._pending.push(resolve); });
+        return new Promise<T>(resolve => { this._pending!.push(resolve); });
     }
 }

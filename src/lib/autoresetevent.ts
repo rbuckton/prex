@@ -37,7 +37,7 @@ export class AutoResetEvent {
             this._signaled = true;
             if (this._waiters.size > 0) {
                 for (const waiter of this._waiters.drain()) {
-                    waiter();
+                    if (waiter) waiter();
                 }
 
                 this._signaled = false;
@@ -75,7 +75,7 @@ export class AutoResetEvent {
             });
 
             const registration = token.register(() => {
-                node.list.deleteNode(node);
+                node.list!.deleteNode(node);
                 reject(new CancelError());
             });
         });

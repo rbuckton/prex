@@ -10,8 +10,8 @@ See LICENSE file in the project root for details.
  */
 export class Deferred<T> {
     private _promise: Promise<T>;
-    private _resolve: (value?: PromiseLike<T> | T) => void;
-    private _reject: (reason: any) => void;
+    private _resolve!: (value?: PromiseLike<T> | T) => void;
+    private _reject!: (reason: any) => void;
 
     /**
      * Initializes a new instance of the Deferred class.

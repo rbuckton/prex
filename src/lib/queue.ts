@@ -11,8 +11,8 @@ import { isMissing, isObject, isIterable, isInstance } from "./utils";
  * An asynchronous queue.
  */
 export class AsyncQueue<T> {
-    private _available: Array<Promise<T>> = undefined;
-    private _pending: Array<(value: T | PromiseLike<T>) => void> = undefined;
+    private _available: Array<Promise<T>> | undefined = undefined;
+    private _pending: Array<(value: T | PromiseLike<T>) => void> | undefined = undefined;
 
     /**
      * Initializes a new instance of the AsyncQueue class.
@@ -82,6 +82,6 @@ export class AsyncQueue<T> {
             this._pending = [];
         }
 
-        return new Promise<T>(resolve => { this._pending.push(resolve); });
+        return new Promise<T>(resolve => { this._pending!.push(resolve); });
     }
 }

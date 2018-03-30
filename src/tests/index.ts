@@ -14,6 +14,7 @@ import "./async-chai";
 import "./list";
 import "./cancellation";
 import "./queue";
+import "./boundedQueue";
 import "./stack";
 import "./manualresetevent";
 import "./autoresetevent";

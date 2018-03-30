@@ -18,9 +18,9 @@ type CancellationState =
  */
 export class CancellationTokenSource {
     private _state: CancellationState = "open";
-    private _token: CancellationToken = undefined;
-    private _registrations: LinkedList<CancellationTokenRegistration> = undefined;
-    private _linkingRegistrations: CancellationTokenRegistration[] = undefined;
+    private _token: CancellationToken | undefined = undefined;
+    private _registrations: LinkedList<CancellationTokenRegistration> | undefined = undefined;
+    private _linkingRegistrations: CancellationTokenRegistration[] | undefined = undefined;
 
     /**
      * Initializes a new instance of a CancellationTokenSource.
@@ -63,7 +63,8 @@ export class CancellationTokenSource {
     /*@internal*/ get _currentState(): CancellationState {
         if (this._state === "open" && this._linkingRegistrations && this._linkingRegistrations.length > 0) {
             for (const registration of this._linkingRegistrations) {
-                if (registration._cancellationSource._currentState === "cancellationRequested") {
+                if (registration._cancellationSource &&
+                    registration._cancellationSource._currentState === "cancellationRequested") {
                     return "cancellationRequested";
                 }
             }
@@ -102,7 +103,9 @@ export class CancellationTokenSource {
 
         if (registrations && registrations.size > 0) {
             for (const registration of registrations) {
-                this._executeCallback(registration._cancellationTarget);
+                if (registration._cancellationTarget) {
+                    this._executeCallback(registration._cancellationTarget);
+                }
             }
         }
     }
@@ -164,7 +167,7 @@ export class CancellationTokenSource {
             }
         });
 
-        return node.value;
+        return node.value!;
     }
 
     /**
@@ -289,8 +292,8 @@ CancelError.prototype.name = "CancelError";
  * An object used to unregister a callback registered to a CancellationToken.
  */
 export interface CancellationTokenRegistration {
-    /*@internal*/ _cancellationSource: CancellationTokenSource;
-    /*@internal*/ _cancellationTarget: () => void;
+    /*@internal*/ _cancellationSource: CancellationTokenSource | undefined;
+    /*@internal*/ _cancellationTarget: (() => void) | undefined;
     /**
      * Unregisters the callback
      */
