@@ -18,6 +18,7 @@ See LICENSE file in the project root for details.
   * [new CancellationToken(canceled?)](#new-cancellationtokencanceled)
   * [CancellationToken.none](#cancellationtokennone)
   * [CancellationToken.canceled](#cancellationtokencanceled)
+  * [CancellationToken.from(token)](#cancellationtokenfromtoken)
   * [token.cancellationRequested](#tokencancellationrequested)
   * [token.canBeCanceled](#tokencanbecanceled)
   * [token.throwIfCancellationRequested()](#tokenthrowifcancellationrequested)
@@ -26,6 +27,8 @@ See LICENSE file in the project root for details.
   * [new CancelError(message?)](#new-cancelerrormessage)
 * [Interface: CancellationTokenRegistration](#interface-cancellationtokenregistration)
   * [registration.unregister()](#registrationunregister)
+* [Interface: VSCodeCancellationTokenLike](#interface-vscodecancellationtokenlike)
+* [Interface: AbortSignalLike](#interface-abortsignallike)
 
 # Class: CancellationTokenSource
 Signals a [CancellationToken](#class-cancellationtoken) that it should be canceled.
@@ -77,6 +80,7 @@ export declare class CancellationToken {
     constructor(canceled?: boolean);
     static readonly none: CancellationToken;
     static readonly canceled: CancellationToken;
+    static from(token: CancellationToken | VSCodeCancellationTokenLike | AbortSignalLike): CancellationToken;
     readonly cancellationRequested: boolean;
     readonly canBeCanceled: boolean;
     throwIfCancellationRequested(): void;
@@ -94,6 +98,10 @@ Gets a token which will never be canceled.
 
 ## CancellationToken.canceled
 Gets a token that is already canceled.
+* Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
+
+## CancellationToken.from(token)
+Adapts a CancellationToken-like primitive from a different library.
 * Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
 
 ## token.cancellationRequested
@@ -142,6 +150,28 @@ export interface CancellationTokenRegistration {
 
 ## registration.unregister()
 Unregisters the callback.
+
+# Interface: VSCodeCancellationTokenLike
+Describes a foreign cancellation primitive similar to the one provided by `vscode` for extensions.
+
+### Syntax
+```ts
+export interface VSCodeCancellationTokenLike {
+    isCancellationRequested: boolean;
+    onCancellationRequested(listener: () => any): { dispose(): any; };
+}
+```
+
+# Interface: AbortSignalLike
+Describes a foreign cancellation primitive similar to the one used by the DOM.
+
+### Syntax
+```ts
+export interface AbortSignalLike {
+    aborted: boolean;
+    addEventListener(type: "abort", callback: () => any): any;
+}
+```
 
 [String]: http://ecma-international.org/ecma-262/6.0/index.html#sec-string-constructor
 [Boolean]: http://ecma-international.org/ecma-262/6.0/index.html#sec-boolean-constructor

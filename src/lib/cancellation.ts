@@ -259,6 +259,27 @@ export class CancellationToken {
     }
 
     /**
+     * Adapts a CancellationToken-like primitive from a different library.
+     */
+    public static from(token: CancellationToken | VSCodeCancellationTokenLike | AbortSignalLike) {
+        if (isVSCodeCancellationTokenLike(token)) {
+            if (token.isCancellationRequested) return CancellationToken.canceled;
+            const source = new CancellationTokenSource();
+            token.onCancellationRequested(() => source.cancel());
+            return source.token;
+        }
+        else if (isAbortSignalLike(token)) {
+            if (token.aborted) return CancellationToken.canceled;
+            const source = new CancellationTokenSource();
+            token.addEventListener("abort", () => source.cancel());
+            return source.token;
+        }
+        else {
+            return token;
+        }
+    }
+
+    /**
      * Throws a CancelError if cancellation has been requested.
      */
     public throwIfCancellationRequested(): void {
@@ -301,3 +322,33 @@ export interface CancellationTokenRegistration {
 }
 
 const emptyRegistration: CancellationTokenRegistration = Object.create({ unregister() { } });
+
+/**
+ * Describes a foreign cancellation primitive similar to the one provided by `vscode` for extensions.
+ */
+export interface VSCodeCancellationTokenLike {
+    isCancellationRequested: boolean;
+    onCancellationRequested(listener: () => any): { dispose(): any; };
+}
+
+/**
+ * Describes a foreign cancellation primitive similar to the one used by the DOM.
+ */
+export interface AbortSignalLike {
+    aborted: boolean;
+    addEventListener(type: "abort", callback: () => any): any;
+}
+
+function isVSCodeCancellationTokenLike(token: any): token is VSCodeCancellationTokenLike {
+    return typeof token === "object"
+        && token !== null
+        && isBoolean(token.isCancellationRequested)
+        && isFunction(token.onCancellationRequested);
+}
+
+function isAbortSignalLike(token: any): token is AbortSignalLike {
+    return typeof token === "object"
+        && token !== null
+        && isBoolean(token.aborted)
+        && isFunction(token.addEventListener);
+}
