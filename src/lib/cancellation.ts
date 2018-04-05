@@ -280,6 +280,26 @@ export class CancellationToken {
     }
 
     /**
+     * Returns a CancellationToken that becomes canceled when **any** of the provided tokens are canceled.
+     * @param tokens An iterable of CancellationToken objects.
+     */
+    public static race(tokens: Iterable<CancellationToken>) {
+        if (!isIterable(tokens)) throw new TypeError("Object not iterable: iterable.");
+        const tokensArray = Array.isArray(tokens) ? tokens : [...tokens];
+        return tokensArray.length > 0 ? new CancellationTokenSource(tokensArray).token : CancellationToken.none;
+    }
+
+    /**
+     * Returns a CancellationToken that becomes canceled when **all** of the provided tokens are canceled.
+     * @param tokens An iterable of CancellationToken objects.
+     */
+    public static all(tokens: Iterable<CancellationToken>) {
+        if (!isIterable(tokens)) throw new TypeError("Object not iterable: iterable.");
+        const tokensArray = Array.isArray(tokens) ? tokens : [...tokens];
+        return tokensArray.length > 0 ? new CancellationTokenCountdown(tokensArray).token : CancellationToken.none;
+    }
+
+    /**
      * Throws a CancelError if cancellation has been requested.
      */
     public throwIfCancellationRequested(): void {
@@ -327,7 +347,7 @@ const emptyRegistration: CancellationTokenRegistration = Object.create({ unregis
  * Describes a foreign cancellation primitive similar to the one provided by `vscode` for extensions.
  */
 export interface VSCodeCancellationTokenLike {
-    isCancellationRequested: boolean;
+    readonly isCancellationRequested: boolean;
     onCancellationRequested(listener: () => any): { dispose(): any; };
 }
 
@@ -335,7 +355,7 @@ export interface VSCodeCancellationTokenLike {
  * Describes a foreign cancellation primitive similar to the one used by the DOM.
  */
 export interface AbortSignalLike {
-    aborted: boolean;
+    readonly aborted: boolean;
     addEventListener(type: "abort", callback: () => any): any;
 }
 
@@ -351,4 +371,82 @@ function isAbortSignalLike(token: any): token is AbortSignalLike {
         && token !== null
         && isBoolean(token.aborted)
         && isFunction(token.addEventListener);
+}
+
+/**
+ * An object that provides a CancellationToken that becomes cancelled when **all** of its
+ * containing tokens are canceled. This is similar to `CancellationToken.all`, except that you are
+ * able to add additional tokens.
+ */
+export class CancellationTokenCountdown {
+    private _addedCount = 0;
+    private _signaledCount = 0;
+    private _canBeSignaled = false;
+    private _source = new CancellationTokenSource();
+    private _registrations: CancellationTokenRegistration[] = [];
+
+    constructor(iterable?: Iterable<CancellationToken>) {
+        if (!isIterable(iterable, /*optional*/ true)) throw new TypeError("Object not iterable: iterable.");
+
+        if (iterable) {
+            for (const token of iterable) {
+                this.add(token);
+            }
+        }
+
+        this._canBeSignaled = true;
+        this._checkSignalState();
+    }
+
+    /**
+     * Gets the number of tokens added to the countdown.
+     */
+    public get addedCount() { return this._addedCount; }
+
+    /**
+     * Gets the number of tokens that have not yet been canceled.
+     */
+    public get remainingCount() { return this._addedCount - this._signaledCount; }
+
+    /**
+     * Gets the CancellationToken for the countdown.
+     */
+    public get token() { return this._source.token; }
+
+    /**
+     * Adds a CancellationToken to the countdown.
+     */
+    add(token: CancellationToken) {
+        if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected.");
+        if (this._source._currentState !== "open") return this;
+        if (token.cancellationRequested) {
+            this._addedCount++;
+            this._signaledCount++;
+            this._checkSignalState();
+        }
+        else if (token.canBeCanceled) {
+            this._addedCount++;
+            this._registrations.push(token.register(() => {
+                this._signaledCount++;
+                this._checkSignalState();
+            }));
+        }
+        return this;
+    }
+
+    private _checkSignalState() {
+        if (!this._canBeSignaled || this._signaledCount < this._addedCount) return;
+        this._canBeSignaled = false;
+        if (this._addedCount > 0) {
+            try {
+                for (const registration of this._registrations) {
+                    registration.unregister();
+                }
+            }
+            finally {
+                this._registrations.length = 0;
+                this._source.cancel();
+            }
+        }
+    }
 }

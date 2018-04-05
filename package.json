@@ -1,6 +1,6 @@
 {
   "name": "prex",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Async coordination primitives and extensions on top of ES6 Promises",
   "license": "Apache-2.0",
   "keywords": [

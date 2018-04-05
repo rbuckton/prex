@@ -19,6 +19,8 @@ See LICENSE file in the project root for details.
   * [CancellationToken.none](#cancellationtokennone)
   * [CancellationToken.canceled](#cancellationtokencanceled)
   * [CancellationToken.from(token)](#cancellationtokenfromtoken)
+  * [CancellationToken.race(tokens)](#cancellationtokenracetokens)
+  * [CancellationToken.all(tokens)](#cancellationtokenalltokens)
   * [token.cancellationRequested](#tokencancellationrequested)
   * [token.canBeCanceled](#tokencanbecanceled)
   * [token.throwIfCancellationRequested()](#tokenthrowifcancellationrequested)
@@ -27,6 +29,12 @@ See LICENSE file in the project root for details.
   * [new CancelError(message?)](#new-cancelerrormessage)
 * [Interface: CancellationTokenRegistration](#interface-cancellationtokenregistration)
   * [registration.unregister()](#registrationunregister)
+* [Class: CancellationTokenCountdown](#class-cancellationtokencountdown)
+  * [new CancellationTokenCountdown(iterable?)](#new-cancellationtokencountdowniterable)
+  * [countdown.addedCount](#countdownaddedcount)
+  * [countdown.remainingCount](#countdownremainingcount)
+  * [countdown.token](#countdowntoken)
+  * [countdown.add(token)](#countdownaddtoken)
 * [Interface: VSCodeCancellationTokenLike](#interface-vscodecancellationtokenlike)
 * [Interface: AbortSignalLike](#interface-abortsignallike)
 
@@ -81,6 +89,8 @@ export declare class CancellationToken {
     static readonly none: CancellationToken;
     static readonly canceled: CancellationToken;
     static from(token: CancellationToken | VSCodeCancellationTokenLike | AbortSignalLike): CancellationToken;
+    static race(tokens: Iterable<CancellationToken>): CancellationToken;
+    static all(tokens: Iterable<CancellationToken>): CancellationToken;
     readonly cancellationRequested: boolean;
     readonly canBeCanceled: boolean;
     throwIfCancellationRequested(): void;
@@ -102,6 +112,17 @@ Gets a token that is already canceled.
 
 ## CancellationToken.from(token)
 Adapts a CancellationToken-like primitive from a different library.
+* `token` &lt;`any`&gt; A foreign token to adapt.
+* Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
+
+## CancellationToken.race(tokens)
+Returns a CancellationToken that becomes canceled when **any** of the provided tokens are canceled.
+* `tokens` [&lt;Iterable&gt;][Iterable] An iterable of tokens.
+* Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
+
+## CancellationToken.all(tokens)
+Returns a CancellationToken that becomes canceled when **all** of the provided tokens are canceled.
+* `tokens` [&lt;Iterable&gt;][Iterable] An iterable of tokens.
 * Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
 
 ## token.cancellationRequested
@@ -151,13 +172,49 @@ export interface CancellationTokenRegistration {
 ## registration.unregister()
 Unregisters the callback.
 
+# Class: CancellationTokenCountdown
+An object that provides a CancellationToken that becomes cancelled when **all** of its
+containing tokens are canceled. This is similar to `CancellationToken.all`, except that you are
+able to add additional tokens.
+
+### Syntax
+```ts
+export declare class CancellationTokenCountdown {
+    constructor(iterable?: Iterable<CancellationToken>);
+    readonly addedCount: number;
+    readonly remainingCount: number;
+    readonly token: CancellationToken;
+    add(token: CancellationToken): this;
+}
+```
+
+## new CancellationTokenCountdown(iterable?)
+Initializes a new instance of the CancellationTokenCountdown class.
+* `iterable` [&lt;Iterable&gt;][Iterable] An optional iterable of tokens to add to the countdown.
+
+## countdown.addedCount
+Gets the number of tokens added to the countdown.
+* Returns: [&lt;Number&gt;][Number]
+
+## countdown.remainingCount
+Gets the number of tokens that have not yet been canceled.
+* Returns: [&lt;Number&gt;][Number]
+
+## countdown.token
+Gets the CancellationToken for the countdown.
+* Returns: [&lt;CancellationToken&gt;](#class-cancellationtoken)
+
+## countdown.add(token)
+Adds a CancellationToken to the countdown.
+* Returns: [&lt;CancellationTokenCountdown&gt;](#class-cancellationtokencountdown)
+
 # Interface: VSCodeCancellationTokenLike
 Describes a foreign cancellation primitive similar to the one provided by `vscode` for extensions.
 
 ### Syntax
 ```ts
 export interface VSCodeCancellationTokenLike {
-    isCancellationRequested: boolean;
+    readonly isCancellationRequested: boolean;
     onCancellationRequested(listener: () => any): { dispose(): any; };
 }
 ```
@@ -168,13 +225,14 @@ Describes a foreign cancellation primitive similar to the one used by the DOM.
 ### Syntax
 ```ts
 export interface AbortSignalLike {
-    aborted: boolean;
+    readonly aborted: boolean;
     addEventListener(type: "abort", callback: () => any): any;
 }
 ```
 
 [String]: http://ecma-international.org/ecma-262/6.0/index.html#sec-string-constructor
 [Boolean]: http://ecma-international.org/ecma-262/6.0/index.html#sec-boolean-constructor
+[Number]: http://ecma-international.org/ecma-262/6.0/index.html#sec-number-constructor
 [Function]: http://ecma-international.org/ecma-262/6.0/index.html#sec-function-constructor
 [Error]: http://ecma-international.org/ecma-262/6.0/index.html#sec-error-constructor
 [Promise]: http://ecma-international.org/ecma-262/6.0/index.html#sec-promise-constructor

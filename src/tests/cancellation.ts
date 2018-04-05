@@ -7,7 +7,7 @@ See LICENSE file in the project root for details.
 
 import { assert } from "chai";
 import { create } from "domain";
-import { CancellationTokenSource, CancellationToken, CancellationTokenRegistration, CancelError } from "../lib";
+import { CancellationTokenSource, CancellationToken, CancellationTokenRegistration, CancelError, CancellationTokenCountdown } from "../lib";
 
 describe("cancellation", () => {
     describe("source", () => {
@@ -162,6 +162,22 @@ describe("cancellation", () => {
             source.close();
             source.cancel();
             assert.strictEqual(callbackInvocations, 0);
+        });
+    });
+
+    describe("countdown", () => {
+        it("multiple", () => {
+            const source1 = new CancellationTokenSource();
+            const source2 = new CancellationTokenSource();
+            const countdown = new CancellationTokenCountdown([source1.token, source2.token]);
+            assert.isTrue(countdown.token.canBeCanceled);
+            assert.isFalse(countdown.token.cancellationRequested);
+            source1.cancel();
+            assert.isTrue(countdown.token.canBeCanceled);
+            assert.isFalse(countdown.token.cancellationRequested);
+            source2.cancel();
+            assert.isTrue(countdown.token.canBeCanceled);
+            assert.isTrue(countdown.token.cancellationRequested);
         });
     });
 });
