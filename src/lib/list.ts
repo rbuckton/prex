@@ -210,7 +210,7 @@ export class LinkedList<T> {
         let node = this.first;
         while (node) {
             let next = node.next;
-            if (predicate.call(thisArg, node.value, node, this) && node.list === this) {
+            if (predicate.call(thisArg, node.value!, node, this) && node.list === this) {
                 this._deleteNode(node);
                 ++count;
             }
@@ -230,7 +230,7 @@ export class LinkedList<T> {
     public forEach(callback: (value: T, node: LinkedListNode<T>, list: LinkedList<T>) => void, thisArg?: any) {
         if (!isFunction(callback)) throw new TypeError("Function expected: predicate");
         for (const node of this.nodes()) {
-            callback.call(thisArg, node.value, node, this);
+            callback.call(thisArg, node.value!, node, this);
         }
     }
 
