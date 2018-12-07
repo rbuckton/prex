@@ -14,6 +14,7 @@ export * from "./stack";
 export * from "./manualresetevent";
 export * from "./autoresetevent";
 export * from "./semaphore";
+export * from "./pulsar";
 export * from "./barrier";
 export * from "./countdown";
 export * from "./readerwriterlock";
