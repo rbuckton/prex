@@ -6,6 +6,8 @@ See LICENSE file in the project root for details.
 ***************************************************************************** */
 
 import { CancellationToken } from "./cancellation";
+import { Cancelable } from "@esfx/cancelable";
+import { getToken } from "./adapter";
 
 /**
  * Waits the specified number of milliseconds before resolving.
@@ -28,7 +30,7 @@ export function delay<T>(msec: number, value: T | PromiseLike<T>): Promise<T>;
  * @param token A CancellationToken
  * @param msec The number of milliseconds to wait before resolving.
  */
-export function delay(token: CancellationToken, msec: number): Promise<void>;
+export function delay(token: CancellationToken | Cancelable, msec: number): Promise<void>;
 
 /**
  * Waits the specified number of milliseconds before resolving with the provided value.
@@ -37,7 +39,7 @@ export function delay(token: CancellationToken, msec: number): Promise<void>;
  * @param msec The number of milliseconds to wait before resolving.
  * @param value An optional value for the resulting Promise.
  */
-export function delay<T>(token: CancellationToken, msec: number, value: T | PromiseLike<T>): Promise<T>;
+export function delay<T>(token: CancellationToken | Cancelable, msec: number, value: T | PromiseLike<T>): Promise<T>;
 
 /**
  * Waits the specified number of milliseconds before resolving with the provided value.
@@ -46,7 +48,7 @@ export function delay<T>(token: CancellationToken, msec: number, value: T | Prom
  * @param msec The number of milliseconds to wait before resolving.
  * @param value An optional value for the resulting Promise.
  */
-export function delay<T>(token_: number | CancellationToken, msec_?: T | PromiseLike<T> | number, value?: T | PromiseLike<T>) {
+export function delay<T>(token_: number | CancellationToken | Cancelable, msec_?: T | PromiseLike<T> | number, value?: T | PromiseLike<T>) {
     let token: CancellationToken;
     let msec: number;
     if (typeof token_ === "number") {
@@ -56,7 +58,7 @@ export function delay<T>(token_: number | CancellationToken, msec_?: T | Promise
     }
     else {
         msec = msec_ as number;
-        token = token_ as CancellationToken;
+        token = getToken(token_);
     }
 
     if (!token.canBeCanceled) {

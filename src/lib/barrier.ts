@@ -8,6 +8,8 @@ See LICENSE file in the project root for details.
 import { LinkedListNode, LinkedList } from "./list";
 import { CancellationToken, CancelError } from "./cancellation";
 import { isMissing, isFunction, isNumber, isObject, isInstance } from "./utils";
+import { Cancelable } from "@esfx/cancelable";
+import { getToken } from "./adapter";
 
 /**
  * Enables multiple tasks to cooperatively work on an algorithm through
@@ -98,11 +100,10 @@ export class Barrier {
      *
      * @param token An optional CancellationToken used to cancel the request.
      */
-    public signalAndWait(token?: CancellationToken): Promise<void> {
+    public signalAndWait(token?: CancellationToken | Cancelable): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
             if (this._isExecutingPostPhaseAction) throw new Error("This method may not be called from within the postPhaseAction.");
             if (this._participantCount === 0) throw new Error("The barrier has no registered participants.");
             if (this._remainingParticipants === 0) throw new Error("The number of operations using the barrier exceeded the number of registered participants.");
@@ -110,7 +111,7 @@ export class Barrier {
             const node = this._waiters.push({
                 resolve: () => {
                     registration.unregister();
-                    if (token!.cancellationRequested) {
+                    if (_token!.cancellationRequested) {
                         reject(new CancelError());
                     }
                     else {
@@ -119,7 +120,7 @@ export class Barrier {
                 },
                 reject: reason => {
                     registration.unregister();
-                    if (token!.cancellationRequested) {
+                    if (_token!.cancellationRequested) {
                         reject(new CancelError());
                     }
                     else {
@@ -128,7 +129,7 @@ export class Barrier {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());

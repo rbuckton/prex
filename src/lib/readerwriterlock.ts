@@ -8,6 +8,9 @@ See LICENSE file in the project root for details.
 import { LinkedListNode, LinkedList } from "./list";
 import { CancellationToken, CancelError } from "./cancellation";
 import { isMissing, isInstance } from "./utils";
+import { Cancelable } from "@esfx/cancelable";
+import { getToken } from "./adapter";
+import { Disposable } from "@esfx/disposable";
 
 /**
  * Coordinates readers and writers for a resource.
@@ -26,11 +29,10 @@ export class ReaderWriterLock {
      *
      * @param token A CancellationToken used to cancel the request.
      */
-    public read(token?: CancellationToken): Promise<LockHandle> {
+    public read(token?: CancellationToken | Cancelable): Promise<LockHandle> {
         return new Promise<LockHandle>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
 
             if (this._canTakeReadLock()) {
                 resolve(this._takeReadLock());
@@ -39,7 +41,7 @@ export class ReaderWriterLock {
 
             const node = this._readers.push(() => {
                 registration.unregister();
-                if (token!.cancellationRequested) {
+                if (_token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -47,7 +49,7 @@ export class ReaderWriterLock {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());
@@ -62,11 +64,10 @@ export class ReaderWriterLock {
      *
      * @param token A CancellationToken used to cancel the request.
      */
-    public upgradeableRead(token?: CancellationToken): Promise<UpgradeableLockHandle> {
+    public upgradeableRead(token?: CancellationToken | Cancelable): Promise<UpgradeableLockHandle> {
         return new Promise<UpgradeableLockHandle>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
 
             if (this._canTakeUpgradeableReadLock()) {
                 resolve(this._takeUpgradeableReadLock());
@@ -75,7 +76,7 @@ export class ReaderWriterLock {
 
             const node = this._upgradeables.push(() => {
                 registration.unregister();
-                if (token!.cancellationRequested) {
+                if (_token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -83,7 +84,7 @@ export class ReaderWriterLock {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());
@@ -97,11 +98,10 @@ export class ReaderWriterLock {
      *
      * @param token A CancellationToken used to cancel the request.
      */
-    public write(token?: CancellationToken): Promise<LockHandle> {
+    public write(token?: CancellationToken | Cancelable): Promise<LockHandle> {
         return new Promise<LockHandle>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
 
             if (this._canTakeWriteLock()) {
                 resolve(this._takeWriteLock());
@@ -110,7 +110,7 @@ export class ReaderWriterLock {
 
             const node = this._writers.push(() => {
                 registration.unregister();
-                if (token!.cancellationRequested) {
+                if (_token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -118,7 +118,7 @@ export class ReaderWriterLock {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());
@@ -127,11 +127,10 @@ export class ReaderWriterLock {
         });
     }
 
-    private _upgrade(token?: CancellationToken): Promise<LockHandle> {
+    private _upgrade(token?: CancellationToken | Cancelable): Promise<LockHandle> {
         return new Promise<LockHandle>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
 
             if (this._canTakeUpgradeLock()) {
                 resolve(this._takeUpgradeLock());
@@ -140,7 +139,7 @@ export class ReaderWriterLock {
 
             const node = this._upgrades.push(() => {
                 registration.unregister();
-                if (token!.cancellationRequested) {
+                if (_token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -148,7 +147,7 @@ export class ReaderWriterLock {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());
@@ -181,12 +180,15 @@ export class ReaderWriterLock {
     private _takeReadLock(): LockHandle {
         let released = false;
         this._count++;
+        const release = () => {
+            if (released)
+                throw new Error("Lock already released.");
+            released = true;
+            this._releaseReadLock();
+        };
         return {
-            release: () => {
-                if (released) throw new Error("Lock already released.");
-                released = true;
-                this._releaseReadLock();
-            }
+            release,
+            [Disposable.dispose]: release,
         };
     }
 
@@ -209,17 +211,21 @@ export class ReaderWriterLock {
     }
 
     private _takeUpgradeableReadLock(): UpgradeableLockHandle {
-        const hold = {
-            upgrade: (token?: CancellationToken) => {
-                if (this._upgradeable !== hold) throw new Error("Lock already released.");
-                return this._upgrade(token);
-            },
-            release: () => {
-                if (this._upgradeable !== hold) throw new Error("Lock already released.");
-                this._releaseUpgradeableReadLock();
-            }
+        const upgrade = (token?: CancellationToken | Cancelable) => {
+            if (this._upgradeable !== hold)
+                throw new Error("Lock already released.");
+            return this._upgrade(token);
         };
-
+        const release = () => {
+            if (this._upgradeable !== hold)
+                throw new Error("Lock already released.");
+            this._releaseUpgradeableReadLock();
+        };
+        const hold: UpgradeableLockHandle = {
+            upgrade,
+            release,
+            [Disposable.dispose]: release,
+        };
         this._count++;
         this._upgradeable = hold;
         return hold;
@@ -257,11 +263,14 @@ export class ReaderWriterLock {
     }
 
     private _takeUpgradeLock(): LockHandle {
-        const hold = {
-            release: () => {
-                if (this._upgraded !== hold) throw new Error("Lock already released.");
-                this._releaseUpgradeLock();
-            }
+        const release = () => {
+            if (this._upgraded !== hold)
+                throw new Error("Lock already released.");
+            this._releaseUpgradeLock();
+        };
+        const hold: LockHandle = {
+            release,
+            [Disposable.dispose]: release
         };
 
         this._upgraded = hold;
@@ -294,12 +303,15 @@ export class ReaderWriterLock {
     private _takeWriteLock(): LockHandle {
         let released = false;
         this._count = -1;
+        const release = () => {
+            if (released)
+                throw new Error("Lock already released.");
+            released = true;
+            this._releaseWriteLock();
+        };
         return {
-            release: () => {
-                if (released) throw new Error("Lock already released.");
-                released = true;
-                this._releaseWriteLock();
-            }
+            release,
+            [Disposable.dispose]: release,
         };
     }
 
@@ -312,7 +324,7 @@ export class ReaderWriterLock {
 /**
  * An object used to release a held lock.
  */
-export interface LockHandle {
+export interface LockHandle extends Disposable {
     /**
      * Releases the lock.
      */
@@ -322,11 +334,11 @@ export interface LockHandle {
 /**
  * An object used to release a held lock or upgrade to a write lock.
  */
-export interface UpgradeableLockHandle extends LockHandle {
+export interface UpgradeableLockHandle extends LockHandle, Disposable {
     /**
      * Upgrades the lock to a write lock.
      *
      * @param token A CancellationToken used to cancel the request.
      */
-    upgrade(token?: CancellationToken): Promise<LockHandle>;
+    upgrade(token?: CancellationToken | Cancelable): Promise<LockHandle>;
 }

@@ -5,16 +5,12 @@ Licensed under the Apache License, Version 2.0.
 See LICENSE file in the project root for details.
 ***************************************************************************** */
 
-var fs = require('fs')
-  , gulp = require('gulp')
-  , ts = require('gulp-typescript')
-  , typescript = require('typescript')
-  , sourcemaps = require('gulp-sourcemaps')
-  , gutil = require("gulp-util")
+// @ts-check
+var gulp = require('gulp')
   , del = require('del')
   , mocha = require('gulp-mocha')
   , istanbul = require('gulp-istanbul')
-  , merge = require('merge2');
+  , { buildProject } = require('./scripts/build');
 
 var lib = {
     project: "src/lib/tsconfig.json",
@@ -34,32 +30,18 @@ var tests = {
 
 var useCoverage = false;
 
-gulp.task("build:lib", build(lib));
-gulp.task("build:tests", build(tests));
-gulp.task("build", ["build:lib", "build:tests"]);
+const build_lib = () => buildProject("src/lib/tsconfig.json");
+const build_tests = () => buildProject("src/tests/tsconfig.json");
+
+gulp.task("build:lib", build_lib);
+gulp.task("build:tests", build_tests);
+gulp.task("build", gulp.parallel(["build:lib", "build:tests"]));
 gulp.task("clean", cb => del("out", cb));
 gulp.task("cover", setCoverage());
-gulp.task("test:pre-test", ["build"], preTest());
-gulp.task("test", ["test:pre-test"], test(tests));
-gulp.task("watch", watch(lib.src.concat(tests.src), ["test"]));
-gulp.task("default", ["build"]);
-
-function build(opts) {
-    return function () {
-        var tee = gulp
-            .src(opts.src, { base: "src" })
-            .pipe(sourcemaps.init())
-            .pipe(ts(ts.createProject(opts.project, {
-                typescript: typescript
-            })));
-        return merge([
-            tee.dts.pipe(gulp.dest("out")),
-            tee.js
-                .pipe(sourcemaps.write(".", { includeContent: false, sourceRoot: "../../src/" }))
-                .pipe(gulp.dest("out"))
-        ]);
-    };
-}
+gulp.task("test:pre-test", gulp.series("build", preTest()));
+gulp.task("test", gulp.series("test:pre-test", test(tests)));
+gulp.task("watch", watch(lib.src.concat(tests.src), gulp.series(["test"])));
+gulp.task("default", gulp.series(["build"]));
 
 function setCoverage() {
     return function () {
@@ -68,7 +50,7 @@ function setCoverage() {
 }
 
 function preTest() {
-    return function () {
+    return async function () {
         if (useCoverage) {
             return gulp.src(['out/lib/*.js'])
                 .pipe(istanbul())
@@ -81,6 +63,7 @@ function test(opts) {
     return function () {
         var stream = gulp
             .src(opts.main, { read: false })
+            // @ts-ignore
             .pipe(mocha({ reporter: 'dot' }));
         return useCoverage
             ? stream

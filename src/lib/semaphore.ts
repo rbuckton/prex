@@ -8,6 +8,8 @@ See LICENSE file in the project root for details.
 import { LinkedListNode, LinkedList } from "./list";
 import { CancellationToken, CancelError } from "./cancellation";
 import { isMissing, isNumber, isObject, isInstance } from "./utils";
+import { Cancelable } from "@esfx/cancelable";
+import { getToken } from "./adapter";
 const MAX_INT32 = -1 >>> 1;
 
 /**
@@ -50,11 +52,10 @@ export class Semaphore {
      *
      * @param token A CancellationToken used to cancel the request.
      */
-    public wait(token?: CancellationToken): Promise<void> {
+    public wait(token?: CancellationToken | Cancelable): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
 
             if (this._currentCount > 0) {
                 this._currentCount--;
@@ -64,7 +65,7 @@ export class Semaphore {
 
             const node = this._waiters.push(() => {
                 registration.unregister();
-                if (token!.cancellationRequested) {
+                if (_token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -72,7 +73,7 @@ export class Semaphore {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());

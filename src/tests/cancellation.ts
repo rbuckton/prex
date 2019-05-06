@@ -95,6 +95,7 @@ describe("cancellation", () => {
 
     describe("token", () => {
         it("ctor throws when not a CancellationTokenSource", () => {
+            // @ts-ignore
             assert.throws(() => new CancellationToken(<any>{}), TypeError);
         });
         it("throwIfCancellationRequested when not canceled", () => {
@@ -123,6 +124,7 @@ describe("cancellation", () => {
         });
         it("new token for source", () => {
             const source = new CancellationTokenSource();
+            // @ts-ignore
             const token = new CancellationToken(source);
             source.cancel();
             assert.notStrictEqual(source.token, token);

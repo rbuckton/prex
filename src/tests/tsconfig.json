@@ -4,8 +4,11 @@
     "module": "commonjs",
     "stripInternal": true,
     "declaration": true,
-    "outDir": "../../out/test",
+    "outDir": "../../out/tests",
     "lib": ["esnext", "dom"],
     "types": ["node", "mocha"]
-  }
+  },
+  "references": [
+    {"path": "../lib"}
+  ]
 }

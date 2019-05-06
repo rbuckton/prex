@@ -8,6 +8,8 @@ See LICENSE file in the project root for details.
 import { LinkedListNode, LinkedList } from "./list";
 import { CancellationToken, CancelError } from "./cancellation";
 import { isMissing, isBoolean, isInstance } from "./utils";
+import { Cancelable } from "@esfx/cancelable";
+import { getToken } from "./adapter";
 
 /**
  * Asynchronously notifies one or more waiting Promises that an event has occurred.
@@ -58,11 +60,10 @@ export class ManualResetEvent {
      *
      * @param token A CancellationToken used to cancel the request.
      */
-    public wait(token?: CancellationToken): Promise<void> {
+    public wait(token?: CancellationToken | Cancelable): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (isMissing(token)) token = CancellationToken.none;
-            if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected: token.");
-            token.throwIfCancellationRequested();
+            const _token = getToken(token);
+            _token.throwIfCancellationRequested();
 
             if (this._signaled) {
                 resolve();
@@ -71,7 +72,7 @@ export class ManualResetEvent {
 
             const node = this._waiters.push(() => {
                 registration.unregister();
-                if (token!.cancellationRequested) {
+                if (_token!.cancellationRequested) {
                     reject(new CancelError());
                 }
                 else {
@@ -79,7 +80,7 @@ export class ManualResetEvent {
                 }
             });
 
-            const registration = token.register(() => {
+            const registration = _token.register(() => {
                 if (node.list) {
                     node.list.deleteNode(node);
                     reject(new CancelError());

@@ -5,8 +5,10 @@ Licensed under the Apache License, Version 2.0.
 See LICENSE file in the project root for details.
 ***************************************************************************** */
 
-import { LinkedListNode, LinkedList } from "./list";
-import { isMissing, isBoolean, isObject, isFunction, isIterable, isInstance } from "./utils";
+import { Cancelable, CancelableSource, CancelSignal } from "@esfx/cancelable";
+import { Disposable } from "@esfx/disposable";
+import { LinkedList } from "./list";
+import { isMissing, isBoolean, isFunction, isIterable, isInstance } from "./utils";
 
 type CancellationState =
     "open" |
@@ -16,7 +18,7 @@ type CancellationState =
 /**
  * Signals a CancellationToken that it should be canceled.
  */
-export class CancellationTokenSource {
+export class CancellationTokenSource implements CancelableSource {
     private _state: CancellationState = "open";
     private _token: CancellationToken | undefined = undefined;
     private _registrations: LinkedList<CancellationTokenRegistration> | undefined = undefined;
@@ -27,23 +29,26 @@ export class CancellationTokenSource {
      *
      * @param linkedTokens An optional iterable of tokens to which to link this source.
      */
-    constructor(linkedTokens?: Iterable<CancellationToken>) {
+    constructor(linkedTokens?: Iterable<CancellationToken | Cancelable>) {
         if (!isIterable(linkedTokens, /*optional*/ true)) throw new TypeError("Object not iterable: linkedTokens.");
 
         if (linkedTokens) {
             for (const linkedToken of linkedTokens) {
-                if (!isInstance(linkedToken, CancellationToken)) throw new TypeError("CancellationToken expected.");
+                if (!Cancelable.isCancelable(linkedToken)) {
+                    throw new TypeError("CancellationToken expected.");
+                }
 
-                if (linkedToken.cancellationRequested) {
+                const token = CancellationToken.from(linkedToken);
+                if (token.cancellationRequested) {
                     this._state = "cancellationRequested";
                     this._unlink();
                     break;
                 }
-                else if (linkedToken.canBeCanceled) {
+                else if (token.canBeCanceled) {
                     if (this._linkingRegistrations === undefined) {
                         this._linkingRegistrations = [];
                     }
-                    this._linkingRegistrations.push(linkedToken.register(() => this.cancel()))
+                    this._linkingRegistrations.push(token.register(() => this.cancel()))
                 }
             }
         }
@@ -154,17 +159,20 @@ export class CancellationTokenSource {
             this._registrations = new LinkedList<CancellationTokenRegistration>();
         }
 
+        function unregister(this: CancellationTokenRegistration): void {
+            if (this._cancellationSource === undefined) return;
+            if (this._cancellationSource._registrations) {
+                this._cancellationSource._registrations.deleteNode(node);
+            }
+            this._cancellationSource = undefined;
+            this._cancellationTarget = undefined;
+        }
+
         const node = this._registrations.push({
             _cancellationSource: this,
             _cancellationTarget: callback,
-            unregister(this: CancellationTokenRegistration): void {
-                if (this._cancellationSource === undefined) return;
-                if (this._cancellationSource._registrations) {
-                    this._cancellationSource._registrations.deleteNode(node);
-                }
-                this._cancellationSource = undefined;
-                this._cancellationTarget = undefined;
-            }
+            unregister,
+            [Disposable.dispose]: unregister,
         });
 
         return node.value!;
@@ -198,6 +206,14 @@ export class CancellationTokenSource {
             }
         }
     }
+
+    // #region Cancelable
+    [Cancelable.cancelSignal]() { return this.token[Cancelable.cancelSignal](); }
+    // #endregion Cancelable
+
+    // #region CancelableSource
+    [CancelableSource.cancel]() { this.cancel(); }
+    // #endregion CancelableSource
 }
 
 // A source that cannot be canceled.
@@ -208,10 +224,12 @@ closedSource.close();
 const canceledSource = new CancellationTokenSource();
 canceledSource.cancel();
 
+const weakCancelableToToken = typeof WeakMap === "function" ? new WeakMap<Cancelable, CancellationToken>() : undefined;
+
 /**
  * Propagates notifications that operations should be canceled.
  */
-export class CancellationToken {
+export class CancellationToken implements Cancelable {
     /**
      * A token which will never be canceled.
      */
@@ -223,6 +241,7 @@ export class CancellationToken {
     public static readonly canceled = new CancellationToken(/*canceled*/ true);
 
     private _source: CancellationTokenSource;
+    private _signal?: Cancelable & CancelSignal;
 
     /*@internal*/
     constructor(canceled?: boolean);
@@ -261,29 +280,42 @@ export class CancellationToken {
     /**
      * Adapts a CancellationToken-like primitive from a different library.
      */
-    public static from(token: CancellationToken | VSCodeCancellationTokenLike | AbortSignalLike) {
-        if (isVSCodeCancellationTokenLike(token)) {
-            if (token.isCancellationRequested) return CancellationToken.canceled;
-            const source = new CancellationTokenSource();
-            token.onCancellationRequested(() => source.cancel());
-            return source.token;
+    public static from(cancelable: CancellationToken | VSCodeCancellationTokenLike | AbortSignalLike | Cancelable) {
+        if (cancelable instanceof CancellationToken) {
+            return cancelable;
         }
-        else if (isAbortSignalLike(token)) {
-            if (token.aborted) return CancellationToken.canceled;
-            const source = new CancellationTokenSource();
-            token.addEventListener("abort", () => source.cancel());
-            return source.token;
-        }
-        else {
+        if (Cancelable.isCancelable(cancelable)) {
+            const signal = cancelable[Cancelable.cancelSignal]();
+            if (signal.signaled) return CancellationToken.canceled;
+            let token = weakCancelableToToken && weakCancelableToToken.get(cancelable);
+            if (!token) {
+                const source = new CancellationTokenSource();
+                signal.subscribe(() => source.cancel());
+                token = source.token;
+                if (weakCancelableToToken) weakCancelableToToken.set(cancelable, token);
+            }
             return token;
         }
+        if (isVSCodeCancellationTokenLike(cancelable)) {
+            if (cancelable.isCancellationRequested) return CancellationToken.canceled;
+            const source = new CancellationTokenSource();
+            cancelable.onCancellationRequested(() => source.cancel());
+            return source.token;
+        }
+        if (isAbortSignalLike(cancelable)) {
+            if (cancelable.aborted) return CancellationToken.canceled;
+            const source = new CancellationTokenSource();
+            cancelable.addEventListener("abort", () => source.cancel());
+            return source.token;
+        }
+        throw new TypeError("Invalid token.");
     }
 
     /**
      * Returns a CancellationToken that becomes canceled when **any** of the provided tokens are canceled.
      * @param tokens An iterable of CancellationToken objects.
      */
-    public static race(tokens: Iterable<CancellationToken>) {
+    public static race(tokens: Iterable<CancellationToken | Cancelable>) {
         if (!isIterable(tokens)) throw new TypeError("Object not iterable: iterable.");
         const tokensArray = Array.isArray(tokens) ? tokens : [...tokens];
         return tokensArray.length > 0 ? new CancellationTokenSource(tokensArray).token : CancellationToken.none;
@@ -293,7 +325,7 @@ export class CancellationToken {
      * Returns a CancellationToken that becomes canceled when **all** of the provided tokens are canceled.
      * @param tokens An iterable of CancellationToken objects.
      */
-    public static all(tokens: Iterable<CancellationToken>) {
+    public static all(tokens: Iterable<CancellationToken | Cancelable>) {
         if (!isIterable(tokens)) throw new TypeError("Object not iterable: iterable.");
         const tokensArray = Array.isArray(tokens) ? tokens : [...tokens];
         return tokensArray.length > 0 ? new CancellationTokenCountdown(tokensArray).token : CancellationToken.none;
@@ -316,6 +348,25 @@ export class CancellationToken {
     public register(callback: () => void): CancellationTokenRegistration {
         return this._source._register(callback);
     }
+
+    // #region Cancelable
+    [Cancelable.cancelSignal]() {
+        if (!this._signal) {
+            const token = this;
+            this._signal = {
+                get signaled() { return token.cancellationRequested; },
+                subscribe(onCancellationRequested) {
+                    const registration = token.register(onCancellationRequested);
+                    return { unsubscribe() { registration.unregister(); } };
+                },
+                [Cancelable.cancelSignal]() {
+                    return this;
+                }
+            };
+        }
+        return this._signal;
+    }
+    // #endregion Cancelable
 }
 
 /**
@@ -332,7 +383,7 @@ CancelError.prototype.name = "CancelError";
 /**
  * An object used to unregister a callback registered to a CancellationToken.
  */
-export interface CancellationTokenRegistration {
+export interface CancellationTokenRegistration extends Disposable {
     /*@internal*/ _cancellationSource: CancellationTokenSource | undefined;
     /*@internal*/ _cancellationTarget: (() => void) | undefined;
     /**
@@ -385,7 +436,7 @@ export class CancellationTokenCountdown {
     private _source = new CancellationTokenSource();
     private _registrations: CancellationTokenRegistration[] = [];
 
-    constructor(iterable?: Iterable<CancellationToken>) {
+    constructor(iterable?: Iterable<CancellationToken | Cancelable>) {
         if (!isIterable(iterable, /*optional*/ true)) throw new TypeError("Object not iterable: iterable.");
 
         if (iterable) {
@@ -416,17 +467,18 @@ export class CancellationTokenCountdown {
     /**
      * Adds a CancellationToken to the countdown.
      */
-    add(token: CancellationToken) {
-        if (!isInstance(token, CancellationToken)) throw new TypeError("CancellationToken expected.");
+    add(token: CancellationToken | Cancelable) {
+        if (!Cancelable.isCancelable(token)) throw new TypeError("CancellationToken or Cancelable expected.");
+        const ct = CancellationToken.from(token);
         if (this._source._currentState !== "open") return this;
-        if (token.cancellationRequested) {
+        if (ct.cancellationRequested) {
             this._addedCount++;
             this._signaledCount++;
             this._checkSignalState();
         }
-        else if (token.canBeCanceled) {
+        else if (ct.canBeCanceled) {
             this._addedCount++;
-            this._registrations.push(token.register(() => {
+            this._registrations.push(ct.register(() => {
                 this._signaledCount++;
                 this._checkSignalState();
             }));

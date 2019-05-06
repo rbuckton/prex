@@ -8,6 +8,7 @@ See LICENSE file in the project root for details.
 import { CancellationToken, CancelError } from "./cancellation";
 import { ManualResetEvent } from "./manualresetevent";
 import { isMissing, isNumber, isInstance } from "./utils";
+import { Cancelable } from "@esfx/cancelable";
 
 /**
  * An event that is set when all participants have signaled.
@@ -106,7 +107,7 @@ export class CountdownEvent {
      *
      * @param token An optional CancellationToken used to cancel the request.
      */
-    public wait(token?: CancellationToken): Promise<void> {
+    public wait(token?: CancellationToken | Cancelable): Promise<void> {
         return this._event.wait(token);
     }
 }
