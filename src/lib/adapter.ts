@@ -12,6 +12,6 @@ import { isMissing, isInstance } from "./utils";
 /*@internal*/
 export function getToken(token: CancellationToken | Cancelable | undefined) {
     if (isMissing(token)) token = CancellationToken.none;
-    if (!isInstance(token, CancellationToken) && !Cancelable.isCancelable(token)) throw new TypeError("CancellationToken expected: token.");
+    if (!isInstance(token, CancellationToken) && !Cancelable.hasInstance(token)) throw new TypeError("CancellationToken expected: token.");
     return CancellationToken.from(token);
 }

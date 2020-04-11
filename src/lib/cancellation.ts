@@ -34,7 +34,7 @@ export class CancellationTokenSource implements CancelableSource {
 
         if (linkedTokens) {
             for (const linkedToken of linkedTokens) {
-                if (!Cancelable.isCancelable(linkedToken)) {
+                if (!Cancelable.hasInstance(linkedToken)) {
                     throw new TypeError("CancellationToken expected.");
                 }
 
@@ -225,6 +225,7 @@ const canceledSource = new CancellationTokenSource();
 canceledSource.cancel();
 
 const weakCancelableToToken = typeof WeakMap === "function" ? new WeakMap<Cancelable, CancellationToken>() : undefined;
+const weakTokenToCancelable = typeof WeakMap === "function" ? new WeakMap<CancellationToken, Cancelable & CancelSignal>() : undefined;
 
 /**
  * Propagates notifications that operations should be canceled.
@@ -241,7 +242,6 @@ export class CancellationToken implements Cancelable {
     public static readonly canceled = new CancellationToken(/*canceled*/ true);
 
     private _source: CancellationTokenSource;
-    private _signal?: Cancelable & CancelSignal;
 
     /*@internal*/
     constructor(canceled?: boolean);
@@ -284,7 +284,7 @@ export class CancellationToken implements Cancelable {
         if (cancelable instanceof CancellationToken) {
             return cancelable;
         }
-        if (Cancelable.isCancelable(cancelable)) {
+        if (Cancelable.hasInstance(cancelable)) {
             const signal = cancelable[Cancelable.cancelSignal]();
             if (signal.signaled) return CancellationToken.canceled;
             let token = weakCancelableToToken && weakCancelableToToken.get(cancelable);
@@ -351,20 +351,25 @@ export class CancellationToken implements Cancelable {
 
     // #region Cancelable
     [Cancelable.cancelSignal]() {
-        if (!this._signal) {
+        let signal = weakTokenToCancelable?.get(this);
+        if (!signal) {
             const token = this;
-            this._signal = {
+            signal = {
                 get signaled() { return token.cancellationRequested; },
                 subscribe(onCancellationRequested) {
                     const registration = token.register(onCancellationRequested);
-                    return { unsubscribe() { registration.unregister(); } };
+                    return {
+                        unsubscribe() { registration.unregister(); },
+                        [Disposable.dispose]() { this.unsubscribe(); }
+                    };
                 },
                 [Cancelable.cancelSignal]() {
                     return this;
                 }
             };
+            weakTokenToCancelable?.set(this, signal);
         }
-        return this._signal;
+        return signal;
     }
     // #endregion Cancelable
 }
@@ -468,7 +473,7 @@ export class CancellationTokenCountdown {
      * Adds a CancellationToken to the countdown.
      */
     add(token: CancellationToken | Cancelable) {
-        if (!Cancelable.isCancelable(token)) throw new TypeError("CancellationToken or Cancelable expected.");
+        if (!Cancelable.hasInstance(token)) throw new TypeError("CancellationToken or Cancelable expected.");
         const ct = CancellationToken.from(token);
         if (this._source._currentState !== "open") return this;
         if (ct.cancellationRequested) {
