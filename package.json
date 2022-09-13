@@ -1,6 +1,6 @@
 {
   "name": "prex",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Async coordination primitives and extensions on top of ES6 Promises",
   "license": "Apache-2.0",
   "keywords": [
@@ -25,8 +25,8 @@
     "test": "gulp test"
   },
   "dependencies": {
-    "@esfx/cancelable": "^1.0.0-pre.13",
-    "@esfx/disposable": "^1.0.0-pre.13"
+    "@esfx/cancelable": "^1.0.0 || >=1.0.0-pre.13",
+    "@esfx/disposable": "^1.0.0 || >=1.0.0-pre.13"
   },
   "devDependencies": {
     "@types/chai": "^3.5.2",
