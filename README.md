@@ -8,6 +8,34 @@ See LICENSE file in the project root for details.
 # Promise Extensions for JavaScript (prex)
 Asynchronous coordination for JavaScript and TypeScript.
 
+> **DEPRECATED: This package has been deprecated in favor of the following packages that replace it:**]
+> - [`@esfx/cancelable`](https://npmjs.com/package/@esfx/cancelable):
+>   - `CancelError`
+> - [`@esfx/canceltoken`](https://npmjs.com/package/@esfx/canceltoken):
+>   - ~~`CancellationToken`~~ is now `CancelToken`
+>   - ~~`CancellationTokenSource`~~ is now `CancelSource`/`CancelToken.source()`
+> - [`@esfx/async-manualresetevent`](https://npmjs.com/package/@esfx/async-manualresetevent):
+>   - ~~`ManualResetEvent`~~ is now `AsyncManualResetEvent`
+> - [`@esfx/async-autoresetevent`](https://npmjs.com/package/@esfx/async-autoresetevent):
+>   - ~~`AutoResetEvent`~~ is now `AsyncAutoResetEvent`
+> - [`@esfx/async-semaphore`](https://npmjs.com/package/@esfx/async-semaphore):
+>   - ~~`Semaphore`~~ is now `AsyncSemaphore`
+> - [`@esfx/async-countdown`](https://npmjs.com/package/@esfx/async-countdown):
+>   - ~~`CountdownEvent`~~ is now `AsyncCountdownEvent`
+> - [`@esfx/async-barrier`](https://npmjs.com/package/@esfx/async-barrier):
+>   - ~~`Barrier`~~ is now `AsyncBarrier`
+> - [`@esfx/async-readerwriterlock`](https://npmjs.com/package/@esfx/async-readerwriterlock):
+>   - ~~`ReaderWriterLock`~~ is now `AsyncReaderWriterLock`
+> - [`@esfx/async-deferred`](https://npmjs.com/package/@esfx/async-deferred):
+>   - `Deferred`
+> - [`@esfx/async-queue`](https://npmjs.com/package/@esfx/async-queue):
+>   - `AsyncQueue`
+> - [`@esfx/async-stack`](https://npmjs.com/package/@esfx/async-stack):
+>   - `AsyncStack`
+> - [`@esfx/async-delay`](https://npmjs.com/package/@esfx/async-delay):
+>   - `delay(msec, value?)`
+> - NOTE: There are no replacements for `AsyncBoundedQueue` or `Pulsar`, they have been deprecated.
+
 This library contains a number of coordination primitives to assist in asynchronous application development in JavaScript and TypeScript.
 This includes useful additions for building complex asynchronous logic including:
 
